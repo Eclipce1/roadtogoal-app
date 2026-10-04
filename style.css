@@ -3382,3 +3382,17 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
   .add-form.expanded .where-btn { display: block; flex: 1; }
   .add-form.expanded .icon-btn { display: flex; }
 }
+
+/* iOS gives a date field a width of its own and lets it spill out of its card;
+   drop the system look and hold it to the card's width */
+.wiz-input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 52px;
+  text-align: center;
+}
+.wiz-input[type="date"]::-webkit-date-and-time-value { text-align: center; min-height: 1.3em; }
