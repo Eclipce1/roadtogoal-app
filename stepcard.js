@@ -238,12 +238,13 @@ new ResizeObserver(() => autoGrowTitle()).observe(cardPanel);
 
 // the title and every action are textareas that grow with their text instead of clipping it
 function autoGrowTitle() {
-  cardPanel.querySelectorAll(".step-title, .act-text").forEach(growField);
+  cardPanel.querySelectorAll(".step-title, .step-note, .act-text").forEach(growField);
 }
 
 function growField(t) {
   t.style.height = "auto";
-  t.style.height = t.scrollHeight + "px";
+  // scrollHeight leaves out the border, and a field with one would be a hair too short
+  t.style.height = t.scrollHeight + (t.offsetHeight - t.clientHeight) + "px";
 }
 
 function refreshActionsCounter() {
@@ -282,7 +283,7 @@ cardPanel.addEventListener("input", (e) => {
   if (!card) return;
   const field = e.target.dataset.field;
   if (field) card.step[field] = e.target.value;
-  if (e.target.matches(".step-title, .act-text")) growField(e.target);
+  if (e.target.matches(".step-title, .step-note, .act-text")) growField(e.target);
   if (e.target.dataset.actText !== undefined) card.step.actions[+e.target.dataset.actText].text = e.target.value;
   scheduleCardSave();
 });

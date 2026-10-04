@@ -4,7 +4,8 @@ const navRail = document.getElementById("navRail");
 const goalsEl = document.getElementById("goalsView");
 const goalsPanel = goalsEl.querySelector(".goals-panel");
 const expandedGoals = new Set();
-let goalsMode = "graph";
+// the constellation is too small to read on a phone; there the list is the way in
+let goalsMode = window.matchMedia("(max-width: 700px)").matches ? "list" : "graph";
 let goalsSection = "goals"; // "goals" | "plan" — the nav-rail tabs
 
 // section is optional: pass it to jump straight to a tab, or omit to keep the current one
@@ -140,9 +141,11 @@ function goalRow(g, isFirst, isLast) {
         </button>
         <span class="tree-icon">${escapeHtml(g.icon)}</span>
         <span class="tree-name">${escapeHtml(upperFirst(g.mainGoal || "Без названия"))}</span>
-        <span class="tree-meta">${goalDeadlineText(g)}</span>
-        <span class="tree-bar"><i style="transform: scaleX(${total ? done / total : 0})"></i></span>
-        <span class="tree-count">${done}/${total}</span>
+        <span class="tree-stats">
+          <span class="tree-meta">${goalDeadlineText(g)}</span>
+          <span class="tree-bar"><i style="transform: scaleX(${total ? done / total : 0})"></i></span>
+          <span class="tree-count">${done}/${total}</span>
+        </span>
         <span class="tree-order">
           <button type="button" class="tree-move" data-act="move-up" title="Переместить выше" ${isFirst ? "disabled" : ""}>↑</button>
           <button type="button" class="tree-move" data-act="move-down" title="Переместить ниже" ${isLast ? "disabled" : ""}>↓</button>
