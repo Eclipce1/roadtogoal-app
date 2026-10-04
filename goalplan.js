@@ -364,6 +364,10 @@ function showGreetScreen(onContinue) {
     if (e.target !== greetEl && !e.target.closest(".greet-go")) return;
     greetEl.classList.remove("open");
     greetEl.removeEventListener("click", onClick);
+    // while the greeting fades out it still swallows taps: a second tap on "Начнём" must not
+    // fall through and open whichever goal now sits under the finger
+    greetEl.classList.add("leaving");
+    setTimeout(() => greetEl.classList.remove("leaving"), 450);
     onContinue();
   };
   greetEl.addEventListener("click", onClick);

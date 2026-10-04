@@ -3481,3 +3481,6 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 }
 .tree-goal.drag-over-top::before { top: -1px; }
 .tree-goal.drag-over-bottom::after { bottom: -1px; }
+
+/* the greeting keeps catching taps for the moment it takes to fade away */
+.greet-overlay.leaving { pointer-events: auto; }
