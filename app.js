@@ -33,12 +33,28 @@ function previewApi() {
     log: {},
     relapses: [],
     hideFromAnalytics: false,
+    updatedAt: 0,
     ...fields,
   });
+  // same sync bookkeeping as main.py: per-goal and per-day change times, deleted goals
+  const withSyncFields = (st) => {
+    st.orderAt = Number(st.orderAt) || 0;
+    st.deletedGoals = st.deletedGoals || {};
+    st.daysAt = st.daysAt || {};
+    st.plans = st.plans || {};
+    st.marks = st.marks || {};
+    st.nextPlanId = st.nextPlanId || 1;
+    st.version = st.version || 3;
+    st.goals.forEach((g) => (g.updatedAt = g.updatedAt || 0));
+    return st;
+  };
   const load = () => {
     const raw = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (raw && raw.goals && raw.goals.length) return raw;
-    return {
+    if (raw && raw.goals && raw.goals.length) return withSyncFields(raw);
+    // "fresh" marks this demo goal as nothing of the user's own: syncing replaces it
+    // with the real data instead of merging it in or pushing it anywhere
+    return withSyncFields({
+      fresh: true,
       activeGoalId: 1,
       goals: [
         newGoal(1, {
@@ -50,12 +66,20 @@ function previewApi() {
           ],
         }),
       ],
-      plans: {},
-      marks: {},
-      nextPlanId: 1,
-    };
+    });
   };
-  const save = (st) => localStorage.setItem(KEY, JSON.stringify(st));
+  let storageWarned = false;
+  const save = (st) => {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(st));
+    } catch (e) {
+      // a phone browser gives each app only a few MB; losing changes silently would be worse
+      if (!storageWarned) {
+        storageWarned = true;
+        alert("Не удалось сохранить: у приложения на этом устройстве закончилось место. Удали несколько фото из шагов.");
+      }
+    }
+  };
   const settingsOf = (st) => ({
     reminder: { enabled: false, time: "20:00" },
     planReminder: { enabled: false, time: "21:30" },
@@ -67,6 +91,7 @@ function previewApi() {
     return {
       ...JSON.parse(JSON.stringify(g)),
       activeGoalId: st.activeGoalId,
+      fresh: !!st.fresh,
       settings: settingsOf(st),
       goals: st.goals.map((x) => ({
         id: x.id,
@@ -86,43 +111,91 @@ function previewApi() {
       marks: st.marks || {},
     };
   };
-  // goalId is optional: the analytics screen addresses goals other than the active one
+  // goalId is optional: the analytics screen addresses goals other than the active one.
+  // A change to a goal stamps it, so the sync knows which device touched it last.
   const change = (fn, goalId) => {
     const st = load();
     const goal = (goalId && st.goals.find((x) => x.id === goalId)) || st.goals.find((x) => x.id === st.activeGoalId);
     fn(goal, st);
+    goal.updatedAt = Date.now();
+    delete st.fresh;
+    save(st);
+    return view(st);
+  };
+  // changes to the store itself (goal list, day plans) stamp what they touch on their own
+  const edit = (fn) => {
+    const st = load();
+    fn(st);
+    delete st.fresh;
+    save(st);
+    return view(st);
+  };
+  // looking at things or per-device settings: not a change anyone else needs to hear about
+  const quiet = (fn) => {
+    const st = load();
+    fn(st);
     save(st);
     return view(st);
   };
   const META = ["mainGoal", "woop", "deadline", "returnShownOn", "wizardDismissed", "reviewSnoozedOn"];
   const STEP = ["title", "note", "actions", "minimum", "reward"];
   return {
-    get_data: async () => change(() => {}),
+    get_data: async () => quiet(() => {}),
     select_goal: async (id) =>
-      change((_, st) => {
+      quiet((st) => {
         if (st.goals.some((x) => x.id === id)) st.activeGoalId = id;
       }),
     create_goal: async () =>
-      change((_, st) => {
-        const id = Math.max(0, ...st.goals.map((x) => x.id)) + 1;
-        st.goals.push(newGoal(id));
+      edit((st) => {
+        // 100000+ keeps ids made on a phone clear of the ones made on the computer
+        const id = Math.max(100000, ...st.goals.map((x) => x.id)) + 1;
+        st.goals.push(newGoal(id, { updatedAt: Date.now() }));
         st.activeGoalId = id;
+        st.orderAt = Date.now();
       }),
     delete_goal: async (id) =>
-      change((_, st) => {
+      edit((st) => {
         st.goals = st.goals.filter((x) => x.id !== id);
-        if (!st.goals.length) st.goals = [newGoal(1)];
+        st.deletedGoals[String(id)] = st.orderAt = Date.now();
+        if (!st.goals.length) st.goals = [newGoal(1, { updatedAt: Date.now() })];
         if (!st.goals.some((x) => x.id === st.activeGoalId)) st.activeGoalId = st.goals[0].id;
       }),
     move_goal: async (id, delta) =>
-      change((_, st) => {
+      edit((st) => {
         const i = st.goals.findIndex((x) => x.id === id);
         const j = i + delta;
         if (i === -1 || j < 0 || j >= st.goals.length) return;
         [st.goals[i], st.goals[j]] = [st.goals[j], st.goals[i]];
+        st.orderAt = Date.now();
       }),
     set_reminder: async (enabled, time) =>
-      change((_, st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
+      quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
+
+    // ---- sync: the page merges, the store only hands data over and takes it back ----
+    export_store: async () => JSON.parse(JSON.stringify(load())),
+    import_store: async (incoming) => {
+      if (!incoming || !Array.isArray(incoming.goals) || !incoming.goals.length) return view(load());
+      const cur = load();
+      try {
+        localStorage.setItem(KEY + "_presync", JSON.stringify(cur)); // one copy of what this replaced
+      } catch (e) {}
+      const st = withSyncFields({ ...incoming, settings: cur.settings || {} });
+      delete st.fresh;
+      st.activeGoalId = st.goals.some((g) => g.id === cur.activeGoalId) ? cur.activeGoalId : st.goals[0].id;
+      save(st);
+      return view(st);
+    },
+    get_sync_config: async () => JSON.parse(localStorage.getItem("roadtogoal_sync") || "{}"),
+    set_sync_config: async (cfg) => {
+      if (cfg) {
+        const keep = {};
+        ["token", "repo", "baseSha", "lastSyncAt", "apiBase"].forEach((k) => k in cfg && (keep[k] = cfg[k]));
+        localStorage.setItem("roadtogoal_sync", JSON.stringify(keep));
+        return keep;
+      }
+      localStorage.removeItem("roadtogoal_sync");
+      return {};
+    },
     set_main_goal: async (title) => change((g) => (g.mainGoal = title)),
     update_meta: async (patch) => change((g) => META.forEach((k) => k in patch && (g[k] = patch[k]))),
     add_subgoal: async (title, reward, where = "end") =>
@@ -203,41 +276,48 @@ function previewApi() {
         g.reviews.push({ date: today(), helped: r.helped || "", hindered: r.hindered || "", next: r.next || "" })
       ),
     add_plan_item: async (day, text) =>
-      change((_, st) => {
+      edit((st) => {
         text = (text || "").trim();
         if (!text) return;
-        st.plans = st.plans || {};
         st.plans[day] = st.plans[day] || [];
         const id = st.nextPlanId || 1;
         st.plans[day].push({ id, text, done: false });
         st.nextPlanId = id + 1;
+        st.daysAt[day] = Date.now();
       }),
     toggle_plan_item: async (day, itemId) =>
-      change((_, st) => {
-        ((st.plans || {})[day] || []).forEach((it) => it.id === itemId && (it.done = !it.done));
+      edit((st) => {
+        (st.plans[day] || []).forEach((it) => {
+          if (it.id !== itemId) return;
+          it.done = !it.done;
+          st.daysAt[day] = Date.now();
+        });
       }),
     delete_plan_item: async (day, itemId) =>
-      change((_, st) => {
-        if (st.plans && st.plans[day]) st.plans[day] = st.plans[day].filter((it) => it.id !== itemId);
+      edit((st) => {
+        if (!st.plans[day]) return;
+        st.plans[day] = st.plans[day].filter((it) => it.id !== itemId);
+        st.daysAt[day] = Date.now();
       }),
     reorder_plan: async (day, order) =>
-      change((_, st) => {
-        const items = (st.plans || {})[day];
+      edit((st) => {
+        const items = st.plans[day];
         if (!items) return;
         const byId = new Map(items.map((it) => [it.id, it]));
         const seen = new Set(order.filter((id) => byId.has(id)));
         st.plans[day] = [...order.map((id) => byId.get(id)).filter(Boolean), ...items.filter((it) => !seen.has(it.id))];
+        st.daysAt[day] = Date.now();
       }),
     set_day_mark: async (day, label) =>
-      change((_, st) => {
-        st.marks = st.marks || {};
+      edit((st) => {
         if (label === null || label === undefined) delete st.marks[day];
         else st.marks[day] = String(label).trim();
+        st.daysAt[day] = Date.now();
       }),
     set_plan_reminder: async (enabled, time) =>
-      change((_, st) => (st.settings = { ...settingsOf(st), planReminder: { enabled: !!enabled, time } })),
+      quiet((st) => (st.settings = { ...settingsOf(st), planReminder: { enabled: !!enabled, time } })),
     set_autostart: async (enabled) =>
-      change((_, st) => (st.settings = { ...settingsOf(st), autostart: !!enabled })),
+      quiet((st) => (st.settings = { ...settingsOf(st), autostart: !!enabled })),
     set_tracker: async (patch, goalId) =>
       change(
         (g) => ["name", "unit", "target"].forEach((k) => k in patch && (g.tracker[k] = String(patch[k]).trim())),
@@ -280,8 +360,18 @@ const apiReady = new Promise((resolve) => {
   }, 100);
 });
 
+// calls that only look at things, or touch this device's own settings, are no news to the other device
+const NOT_A_CHANGE = new Set([
+  "get_data", "select_goal", "export_store", "import_store", "get_sync_config", "set_sync_config",
+  "set_reminder", "set_plan_reminder", "set_autostart",
+]);
+
 const api = new Proxy({}, {
-  get: (_, name) => async (...args) => (await apiReady)[name](...args),
+  get: (_, name) => async (...args) => {
+    const result = await (await apiReady)[name](...args);
+    if (!NOT_A_CHANGE.has(name) && typeof Sync !== "undefined") Sync.touch();
+    return result;
+  },
 });
 
 const svg = document.getElementById("roadSvg");
@@ -836,8 +926,11 @@ new ResizeObserver(() => {
 window.addEventListener("DOMContentLoaded", async () => {
   const data = await api.get_data();
   render(data, { scrollToCurrent: true });
+  if (typeof Sync !== "undefined") Sync.start();
   showGreetScreen(() => {
     openGoals("goals");
-    afterStart(data);
+    // a phone that still holds only the demo goal has one job: get the real goals from the computer
+    if (data.fresh && !PREVIEW && typeof Sync !== "undefined") Sync.openSetup();
+    else afterStart(data);
   });
 });

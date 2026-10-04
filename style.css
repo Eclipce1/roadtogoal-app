@@ -3215,3 +3215,43 @@ body.local .remind-wrap { display: none; }
   .cal-day { aspect-ratio: 1.45; border-radius: 9px; }
   .agenda-body { padding-left: 16px; padding-right: 16px; }
 }
+
+/* ---------- sync popover ("Синхронизация" in "Мои цели") ---------- */
+
+/* reminders are Windows-only, but this one is for every device */
+body.local .remind-wrap.sync-wrap { display: block; }
+body.local .remind-wrap:not(.sync-wrap) { display: none; }
+
+.sync-token {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.sync-token:focus { border-color: rgba(255, 255, 255, 0.35); }
+.sync-go,
+.sync-actions button {
+  margin-top: 10px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--white);
+  color: #000;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sync-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sync-actions button.sync-off { background: transparent; color: var(--text-2); }
+.sync-err { color: #fca5a5; }
+@media (max-width: 700px) {
+  /* the popover opens from the left edge of its button; on a narrow screen keep it inside */
+  .sync-wrap .remind-pop { position: fixed; left: 12px; right: 12px; top: 120px; width: auto; }
+}

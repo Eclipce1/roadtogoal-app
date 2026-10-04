@@ -177,6 +177,7 @@ function goalsMainHtml() {
       <div class="goals-tools">
         ${reminderControl()}
         ${autostartControl()}
+        ${typeof Sync !== "undefined" ? Sync.controlHtml() : ""}
         <div class="seg">
           <button type="button" data-act="mode" data-mode="graph" class="${goalsMode === "graph" ? "on" : ""}">Граф</button>
           <button type="button" data-act="mode" data-mode="list" class="${goalsMode === "list" ? "on" : ""}">Список</button>
