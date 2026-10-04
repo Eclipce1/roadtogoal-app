@@ -46,6 +46,13 @@ const Sync = (() => {
         "}"
       );
     }
+    // a photo is hundreds of KB of text; comparing a few samples of it is enough to tell
+    // whether it changed, and keeps a round of syncing from re-reading all of it several times
+    if (typeof x === "string" && x.length > 512) {
+      let probe = x.length + ":";
+      for (let i = 0; i < 24; i++) probe += x.slice(Math.floor(((x.length - 16) * i) / 23), Math.floor(((x.length - 16) * i) / 23) + 16);
+      return JSON.stringify(probe);
+    }
     return JSON.stringify(x);
   }
 

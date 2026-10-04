@@ -48,7 +48,7 @@ function previewApi() {
     st.goals.forEach((g) => (g.updatedAt = g.updatedAt || 0));
     return st;
   };
-  const load = () => {
+  const readStore = () => {
     const raw = JSON.parse(localStorage.getItem(KEY) || "null");
     if (raw && raw.goals && raw.goals.length) return withSyncFields(raw);
     // "fresh" marks this demo goal as nothing of the user's own: syncing replaces it
@@ -68,10 +68,21 @@ function previewApi() {
       ],
     });
   };
+  // The store (photos included) can run to hundreds of KB. Parsing and rewriting all of it
+  // on every tap is what a phone feels as a stutter, so it is read once, kept in memory, and
+  // written back a moment after the last change (and whenever the page is put away).
+  let cache = null;
+  let dirty = false;
+  let flushTimer = 0;
+  const load = () => cache || (cache = readStore());
   let storageWarned = false;
-  const save = (st) => {
+  const flush = () => {
+    clearTimeout(flushTimer);
+    flushTimer = 0;
+    if (!dirty || !cache) return;
+    dirty = false;
     try {
-      localStorage.setItem(KEY, JSON.stringify(st));
+      localStorage.setItem(KEY, JSON.stringify(cache));
     } catch (e) {
       // a phone browser gives each app only a few MB; losing changes silently would be worse
       if (!storageWarned) {
@@ -80,6 +91,24 @@ function previewApi() {
       }
     }
   };
+  const save = (st) => {
+    cache = st;
+    dirty = true;
+    if (!flushTimer) flushTimer = setTimeout(flush, 400);
+  };
+  window.addEventListener("pagehide", flush);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
+  // another window of the app wrote to the same storage: forget what we remembered
+  window.addEventListener("storage", (e) => {
+    if (e.key === KEY && !dirty) cache = null;
+  });
+  // a copy that shares the (immutable) strings: photos are not duplicated byte by byte
+  const copy = (x) =>
+    Array.isArray(x)
+      ? x.map(copy)
+      : x && typeof x === "object"
+      ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, copy(v)]))
+      : x;
   const settingsOf = (st) => ({
     reminder: { enabled: false, time: "20:00" },
     planReminder: { enabled: false, time: "21:30" },
@@ -89,7 +118,7 @@ function previewApi() {
   const view = (st) => {
     const g = st.goals.find((x) => x.id === st.activeGoalId);
     return {
-      ...JSON.parse(JSON.stringify(g)),
+      ...copy(g),
       activeGoalId: st.activeGoalId,
       fresh: !!st.fresh,
       settings: settingsOf(st),
@@ -116,7 +145,12 @@ function previewApi() {
   const change = (fn, goalId) => {
     const st = load();
     const goal = (goalId && st.goals.find((x) => x.id === goalId)) || st.goals.find((x) => x.id === st.activeGoalId);
-    fn(goal, st);
+    try {
+      fn(goal, st);
+    } catch (e) {
+      cache = null; // half-applied: go back to what was saved
+      throw e;
+    }
     goal.updatedAt = Date.now();
     delete st.fresh;
     save(st);
@@ -125,7 +159,12 @@ function previewApi() {
   // changes to the store itself (goal list, day plans) stamp what they touch on their own
   const edit = (fn) => {
     const st = load();
-    fn(st);
+    try {
+      fn(st);
+    } catch (e) {
+      cache = null;
+      throw e;
+    }
     delete st.fresh;
     save(st);
     return view(st);
@@ -133,7 +172,12 @@ function previewApi() {
   // looking at things or per-device settings: not a change anyone else needs to hear about
   const quiet = (fn) => {
     const st = load();
-    fn(st);
+    try {
+      fn(st);
+    } catch (e) {
+      cache = null;
+      throw e;
+    }
     save(st);
     return view(st);
   };
@@ -181,7 +225,7 @@ function previewApi() {
       quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
 
     // ---- sync: the page merges, the store only hands data over and takes it back ----
-    export_store: async () => JSON.parse(JSON.stringify(load())),
+    export_store: async () => copy(load()),
     import_store: async (incoming) => {
       if (!incoming || !Array.isArray(incoming.goals) || !incoming.goals.length) return view(load());
       const cur = load();

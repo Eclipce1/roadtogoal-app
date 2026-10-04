@@ -3484,3 +3484,19 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 
 /* the greeting keeps catching taps for the moment it takes to fade away */
 .greet-overlay.leaving { pointer-events: auto; }
+
+/* ---------- Touch screens: nothing that animates forever, switching is near-instant ---------- */
+
+@media (hover: none) {
+  /* an endlessly pulsing ring keeps the phone compositing the whole road every frame */
+  .node.current .node-circle::before { animation: none; opacity: 0; will-change: auto; }
+  .nav-rail.unseen .nav-handle { animation: none; }
+
+  /* a full-screen fade with a sliding panel inside is the heaviest thing a tab switch does */
+  .goals-view { transition: opacity 0.12s ease, visibility 0s linear 0.12s; }
+  .goals-view.open { transition-delay: 0s; }
+  .goals-panel { transform: none; transition: none; }
+  .tree-children { transition: none; }
+  .overlay { transition: opacity 0.14s ease, visibility 0s linear 0.14s; }
+  .overlay.open { transition-delay: 0s; }
+}
