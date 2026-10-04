@@ -326,7 +326,12 @@ function agendaDayPanelHtml() {
       }
 
       <div class="agenda-list">${list}</div>
-      <input class="agenda-new" placeholder="+ добавить пункт ${agendaForPhrase(agendaDay)}" />
+      <div class="agenda-new-row">
+        <input class="agenda-new" placeholder="+ добавить пункт ${agendaForPhrase(agendaDay)}" />
+        <button type="button" class="agenda-send" data-act="agenda-add" title="Добавить" aria-label="Добавить пункт" disabled>
+          <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"/></svg>
+        </button>
+      </div>
       ${agendaChartHtml()}
     </div>`;
 }
@@ -422,6 +427,8 @@ goalsPanel.addEventListener("click", async (e) => {
     el.closest(".remind-wrap").classList.toggle("open");
   } else if (act === "plan-remind-switch") {
     await applyPlanReminder(!el.classList.contains("on"));
+  } else if (act === "agenda-add") {
+    submitAgendaItem();
   } else if (act === "agenda-day") {
     selectAgendaDay(el.dataset.day);
   } else if (act === "agenda-month") {
@@ -452,16 +459,29 @@ goalsPanel.addEventListener("click", async (e) => {
   }
 });
 
+async function submitAgendaItem() {
+  const input = goalsPanel.querySelector(".agenda-new");
+  const text = input ? input.value.trim() : "";
+  if (!text) return;
+  input.value = "";
+  lastData = await api.add_plan_item(agendaDay, text);
+  renderGoals();
+  // stay in the field, so several items can go in one after another
+  const fresh = goalsPanel.querySelector(".agenda-new");
+  if (fresh) fresh.focus();
+}
+
+// the send button wakes up once there is something to send
+goalsPanel.addEventListener("input", (e) => {
+  if (!e.target.classList.contains("agenda-new")) return;
+  const send = goalsPanel.querySelector(".agenda-send");
+  if (send) send.disabled = !e.target.value.trim();
+});
+
 goalsPanel.addEventListener("keydown", async (e) => {
   if (e.key !== "Enter") return;
   if (e.target.classList.contains("agenda-new")) {
-    const text = e.target.value.trim();
-    if (!text) return;
-    e.target.value = "";
-    lastData = await api.add_plan_item(agendaDay, text);
-    renderGoals();
-    const fresh = goalsPanel.querySelector(".agenda-new");
-    if (fresh) fresh.focus();
+    submitAgendaItem();
   } else if (e.target.classList.contains("mark-label")) {
     e.preventDefault();
     e.target.blur(); // the blur handler saves and refreshes the lists
