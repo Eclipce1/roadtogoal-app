@@ -261,7 +261,11 @@ const Graph = (() => {
 
   function onPointerDown(e) {
     if (e.button !== 0) return;
-    svg.setPointerCapture(e.pointerId);
+    try {
+      svg.setPointerCapture(e.pointerId);
+    } catch {
+      /* the pointer is already gone (a very quick tap): nothing to capture */
+    }
     if (e.pointerType === "touch") {
       touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (touches.size === 2) {
@@ -367,6 +371,10 @@ const Graph = (() => {
     svg.addEventListener("pointercancel", onPointerUp);
     svg.addEventListener("pointerleave", () => !drag && highlight(null));
     svg.addEventListener("wheel", onWheel, { passive: false });
+    // iOS Safari decides a two-finger gesture is a page zoom before the graph sees it, whatever
+    // touch-action says; cancelling the touch (and the Safari-only gesture events) leaves the pinch to us
+    svg.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+    ["gesturestart", "gesturechange", "gestureend"].forEach((t) => svg.addEventListener(t, (e) => e.preventDefault()));
     run(1);
   }
 

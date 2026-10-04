@@ -360,6 +360,10 @@ const apiReady = new Promise((resolve) => {
   }, 100);
 });
 
+// The app has its own zoom where zoom makes sense (the graph). A stray pinch anywhere else
+// would just scale the whole page and leave it stuck there, so Safari's page zoom is switched off.
+["gesturestart", "gesturechange", "gestureend"].forEach((t) => document.addEventListener(t, (e) => e.preventDefault()));
+
 // calls that only look at things, or touch this device's own settings, are no news to the other device
 const NOT_A_CHANGE = new Set([
   "get_data", "select_goal", "export_store", "import_store", "get_sync_config", "set_sync_config",
