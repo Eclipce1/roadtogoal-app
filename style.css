@@ -3403,3 +3403,20 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 @media (hover: none) {
   .day.tap { padding: 10px 4px; margin: -10px -4px; }
 }
+
+/* a day that was missed (or a slip) is a red cross, not just an empty circle */
+.day.miss i { position: relative; border-color: rgba(239, 68, 68, 0.7); }
+.day.miss i::before,
+.day.miss i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 1.6px;
+  border-radius: 1px;
+  background: #ef4444;
+}
+.day.miss i::before { transform: translate(-50%, -50%) rotate(45deg); }
+.day.miss i::after { transform: translate(-50%, -50%) rotate(-45deg); }
+.day.miss span { color: rgba(239, 68, 68, 0.75); }

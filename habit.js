@@ -59,8 +59,10 @@ function renderCleanToday(data) {
   for (let i = 6; i >= 0; i--) {
     const iso = shiftISO(todayISO(), -i);
     const clean = iso >= start && iso <= todayISO();
+    const slipped = (data.relapses || []).some((r) => r.date === iso);
     const wd = WEEKDAYS[new Date(iso + "T00:00:00").getDay()];
-    dots.push(`<div class="day ${clean ? "on" : "off"}${i === 0 ? " is-today" : ""}"><i></i><span>${wd}</span></div>`);
+    const state = slipped ? "miss" : clean ? "on" : "off";
+    dots.push(`<div class="day ${state}${i === 0 ? " is-today" : ""}"${slipped ? ' title="Срыв"' : ""}><i></i><span>${wd}</span></div>`);
   }
 
   const title = slipped
@@ -126,8 +128,9 @@ function renderNumberToday(data) {
   for (let i = 6; i >= 0; i--) {
     const iso = shiftISO(today, -i);
     const wd = WEEKDAYS[new Date(iso + "T00:00:00").getDay()];
-    const cls = log[iso] !== undefined ? "on" : i === 0 ? "is-today" : "off";
-    dots.push(`<div class="day ${cls}"><i></i><span>${wd}</span></div>`);
+    const missed = i > 0 && log[iso] === undefined && (!data.createdAt || iso >= data.createdAt);
+    const cls = log[iso] !== undefined ? "on" : missed ? "miss" : i === 0 ? "is-today" : "off";
+    dots.push(`<div class="day ${cls}"${missed ? ' title="Пропущен: числа за этот день нет"' : ""}><i></i><span>${wd}</span></div>`);
   }
 
   let title, hint;
@@ -170,11 +173,12 @@ function renderHabitToday(data, popToday = false) {
   for (let i = 6; i >= 0; i--) {
     const iso = shiftISO(today, -i);
     const wd = WEEKDAYS[new Date(iso + "T00:00:00").getDay()];
-    const cls = days.has(iso) ? "on" : i === 0 ? "is-today" : "off";
-    const pop = popToday && i === 0 && days.has(iso) ? " pop" : "";
     // an earlier day (since the goal began) can be ticked afterwards, for the day you forgot to mark
     const tappable = i > 0 && (!data.createdAt || iso >= data.createdAt);
-    const attrs = tappable ? ` data-day="${iso}" title="${days.has(iso) ? "Снять отметку с этого дня" : "Отметить этот день"}"` : "";
+    const missed = tappable && !days.has(iso);
+    const cls = days.has(iso) ? "on" : missed ? "miss" : i === 0 ? "is-today" : "off";
+    const pop = popToday && i === 0 && days.has(iso) ? " pop" : "";
+    const attrs = tappable ? ` data-day="${iso}" title="${days.has(iso) ? "Снять отметку с этого дня" : "Пропущен — нажми, если на самом деле делал"}"` : "";
     dots.push(`<div class="day ${cls}${pop}${tappable ? " tap" : ""}"${attrs}><i></i><span>${wd}</span></div>`);
   }
 
