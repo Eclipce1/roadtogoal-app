@@ -3396,3 +3396,10 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
   text-align: center;
 }
 .wiz-input[type="date"]::-webkit-date-and-time-value { text-align: center; min-height: 1.3em; }
+
+/* earlier days of the week can be ticked afterwards */
+.day.tap { cursor: pointer; padding: 6px 3px; margin: -6px -3px; }
+.day.tap:hover i { border-color: rgba(255, 255, 255, 0.55); }
+@media (hover: none) {
+  .day.tap { padding: 10px 4px; margin: -10px -4px; }
+}

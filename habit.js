@@ -172,7 +172,10 @@ function renderHabitToday(data, popToday = false) {
     const wd = WEEKDAYS[new Date(iso + "T00:00:00").getDay()];
     const cls = days.has(iso) ? "on" : i === 0 ? "is-today" : "off";
     const pop = popToday && i === 0 && days.has(iso) ? " pop" : "";
-    dots.push(`<div class="day ${cls}${pop}"><i></i><span>${wd}</span></div>`);
+    // an earlier day (since the goal began) can be ticked afterwards, for the day you forgot to mark
+    const tappable = i > 0 && (!data.createdAt || iso >= data.createdAt);
+    const attrs = tappable ? ` data-day="${iso}" title="${days.has(iso) ? "Снять отметку с этого дня" : "Отметить этот день"}"` : "";
+    dots.push(`<div class="day ${cls}${pop}${tappable ? " tap" : ""}"${attrs}><i></i><span>${wd}</span></div>`);
   }
 
   let title, hint;
@@ -215,6 +218,18 @@ todayEl.addEventListener("click", async (e) => {
 
   if (e.target.closest('[data-act="num-save"]')) {
     saveTodayNumber();
+    return;
+  }
+
+  const dayEl = e.target.closest(".day[data-day]");
+  if (dayEl) {
+    const day = dayEl.dataset.day;
+    const wasMarked = (lastData.checkins || []).includes(day);
+    lastData = await api.toggle_checkin(day);
+    if (wasMarked) Sound.undo();
+    else Sound.step();
+    renderToday(lastData);
+    updateDayClock();
     return;
   }
 

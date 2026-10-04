@@ -269,6 +269,7 @@ function previewApi() {
       change((g) => g.subGoals.forEach((s) => s.id === stepId && (s.images = (s.images || []).filter((im) => im.id !== imageId)))),
     toggle_checkin: async (day) =>
       change((g) => {
+        if (typeof day !== "string" || day > today()) return;
         g.checkins = g.checkins.includes(day) ? g.checkins.filter((x) => x !== day) : [...g.checkins, day].sort();
       }),
     add_review: async (r) =>
