@@ -12,7 +12,6 @@ let goalsSection = "goals"; // "goals" | "plan" — the nav-rail tabs
 function openGoals(section) {
   if (!lastData) return;
   if (section) goalsSection = section;
-  expandedGoals.add(lastData.activeGoalId);
   renderGoals();
   goalsEl.classList.add("open");
   updateNavRail();
