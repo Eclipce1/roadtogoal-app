@@ -176,9 +176,16 @@ function renderHabitToday(data, popToday = false) {
     // an earlier day (since the goal began) can be ticked afterwards, for the day you forgot to mark
     const tappable = i > 0 && (!data.createdAt || iso >= data.createdAt);
     const missed = tappable && !days.has(iso);
-    const cls = days.has(iso) ? "on" : missed ? "miss" : i === 0 ? "is-today" : "off";
+    // One missed day is forgiven and leaves the streak alone, so it gets a pale cross; it is
+    // two in a row that break the streak, and those stay bright.
+    const isMissed = (d) => d < today && (!data.createdAt || d >= data.createdAt) && !days.has(d);
+    const forgiven = missed && !isMissed(shiftISO(iso, -1)) && !isMissed(shiftISO(iso, 1));
+    const cls = days.has(iso) ? "on" : missed ? (forgiven ? "miss soft" : "miss") : i === 0 ? "is-today" : "off";
     const pop = popToday && i === 0 && days.has(iso) ? " pop" : "";
-    const attrs = tappable ? ` data-day="${iso}" title="${days.has(iso) ? "Снять отметку с этого дня" : "Пропущен — нажми, если на самом деле делал"}"` : "";
+    const missTip = forgiven
+      ? "Пропуск прощён — серия не прервалась. Нажми, если на самом деле делал"
+      : "Два пропуска подряд — серия прервалась. Нажми, если на самом деле делал";
+    const attrs = tappable ? ` data-day="${iso}" title="${days.has(iso) ? "Снять отметку с этого дня" : missTip}"` : "";
     dots.push(`<div class="day ${cls}${pop}${tappable ? " tap" : ""}"${attrs}><i></i><span>${wd}</span></div>`);
   }
 

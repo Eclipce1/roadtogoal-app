@@ -3420,3 +3420,9 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 .day.miss i::before { transform: translate(-50%, -50%) rotate(45deg); }
 .day.miss i::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .day.miss span { color: rgba(239, 68, 68, 0.75); }
+
+/* a single missed day was forgiven and the streak went on: a paler cross */
+.day.miss.soft i { border-color: rgba(239, 68, 68, 0.3); }
+.day.miss.soft i::before,
+.day.miss.soft i::after { background: rgba(239, 68, 68, 0.45); }
+.day.miss.soft span { color: rgba(239, 68, 68, 0.45); }
