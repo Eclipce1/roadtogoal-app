@@ -723,6 +723,25 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") togglePicker(false);
 });
 
+// On a phone the bar shows just the text field and "Добавить"; the icon and "where" options
+// come out while you are typing. A tap on a button doesn't focus it on iOS, so :focus-within
+// can't be trusted here: the bar waits a moment before folding back.
+function setBarExpanded(on) {
+  addForm.classList.toggle("expanded", on);
+}
+titleInput.addEventListener("focus", () => setBarExpanded(true));
+titleInput.addEventListener("input", () => setBarExpanded(true));
+titleInput.addEventListener("blur", () => {
+  setTimeout(() => {
+    const stillInUse =
+      titleInput.value.trim() ||
+      document.activeElement === titleInput ||
+      iconPicker.classList.contains("open") ||
+      (typeof whereMenu !== "undefined" && whereMenu.classList.contains("open"));
+    if (!stillInUse) setBarExpanded(false);
+  }, 250);
+});
+
 titleInput.addEventListener("input", () => {
   if (iconChosenByHand) return;
   setIcon(suggestIcon(titleInput.value) || DEFAULT_ICON);

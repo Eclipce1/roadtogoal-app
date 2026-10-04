@@ -33,7 +33,8 @@ function updateDayClock() {
   const parts = [];
   if (hoursLeft) parts.push(`${hoursLeft} ${plural(hoursLeft, "час", "часа", "часов")}`);
   parts.push(`${minutesLeft} ${plural(minutesLeft, "минута", "минуты", "минут")}`);
-  dayClockLeftEl.textContent = `до конца дня ${parts.join(" ")}`;
+  const shortLeft = hoursLeft ? `${hoursLeft} ч ${minutesLeft} мин` : `${minutesLeft} мин`;
+  dayClockLeftEl.innerHTML = `<span class="dc-long">до конца дня ${parts.join(" ")}</span><span class="dc-short">осталось ${shortLeft}</span>`;
 
   // urgent only when time is short AND something today is still waiting — being
   // late in the evening after everything's already checked off isn't a reason to alarm

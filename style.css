@@ -3353,3 +3353,32 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 
 /* the welcome screen's stars have no reason to keep animating once it is closed */
 .greet-overlay:not(.open) .greet-stars svg { animation-play-state: paused; }
+
+/* ---------- Phone: say less on the road screen ---------- */
+
+.short-label, .dc-short { display: none; }
+
+@media (max-width: 700px) {
+  /* one short line of facts above the road instead of three long chips */
+  .meta-line { flex-wrap: wrap; }
+  .chip-when { display: none; }
+  .plan-toggle .long-label { display: none; }
+  .plan-toggle .short-label { display: inline; }
+
+  /* the clock says only what is left */
+  .dc-long { display: none; }
+  .dc-short { display: inline; }
+
+  /* under the road: the streak and the one button; the longer hint lives in the step card */
+  .today-hint { display: none; }
+  .quote-wrap { display: none; }
+
+  /* "new step" is a single line until you start typing */
+  .add-form { flex-wrap: nowrap; padding: 6px; border-radius: 999px; }
+  #newTitle { flex: 1 1 auto; padding: 10px 12px; }
+  .add-form .where-btn, .add-form .icon-btn { display: none; }
+  .add-form.expanded { flex-wrap: wrap; row-gap: 6px; padding: 8px; border-radius: 22px; }
+  .add-form.expanded #newTitle { flex: 1 1 100%; }
+  .add-form.expanded .where-btn { display: block; flex: 1; }
+  .add-form.expanded .icon-btn { display: flex; }
+}

@@ -71,14 +71,14 @@ function renderGoalMeta(data) {
     if (left > 0) rest = `осталось <b>${left}</b> ${plural(left, "день", "дня", "дней")}`;
     else if (left === 0) rest = "<b>срок сегодня</b>";
     else rest = "срок прошёл — можно перенести";
-    chips.push(`<button type="button" class="chip" data-step="deadline" title="Изменить срок">до ${escapeHtml(date)}<i></i>${rest}</button>`);
+    chips.push(`<button type="button" class="chip" data-step="deadline" title="Изменить срок"><span class="chip-when">до ${escapeHtml(date)}<i></i></span>${rest}</button>`);
   }
 
   const w = data.woop || {};
   if (hasPlan(data)) {
     chips.push(`
       <div class="plan-wrap">
-        <button type="button" class="chip plan-toggle">Мой план на трудный день</button>
+        <button type="button" class="chip plan-toggle" title="Мой план на трудный день"><span class="long-label">Мой план на трудный день</span><span class="short-label">Мой план</span></button>
         <div class="plan-pop">
           <div class="plan-pop-label">Если захочется бросить</div>
           <p class="plan-pop-text"><span>Если</span> ${escapeHtml(lowerFirst(cleanObstacle(w.obstacle)))},</p>
