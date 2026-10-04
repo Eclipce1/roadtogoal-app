@@ -285,7 +285,8 @@ const Sync = (() => {
   function busy() {
     const a = document.activeElement;
     const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && !a.classList.contains("sync-token");
-    return (typeof card !== "undefined" && card) || typing;
+    const roadMoving = (typeof drag !== "undefined" && drag) || (typeof scrollAnim !== "undefined" && scrollAnim);
+    return (typeof card !== "undefined" && card) || typing || roadMoving;
   }
 
   async function applyImport(merged) {

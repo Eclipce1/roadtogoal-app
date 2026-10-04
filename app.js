@@ -828,8 +828,23 @@ let drag = null;
 let suppressClick = false;
 let userScrolled = false;
 
+// A finger scrolls the road with the browser's own momentum scrolling, which runs off the
+// main thread. A script moving scrollLeft on every frame can't match that on a phone, and
+// that is what made the road stutter there. Mouse and pen keep the scripted drag below.
+let lastTouchAt = 0;
+
 roadWrap.addEventListener("pointerdown", (e) => {
   suppressClick = false;
+  if (e.pointerType === "touch") {
+    lastTouchAt = Date.now();
+    momentum = 0;
+    if (scrollAnim) {
+      cancelAnimationFrame(scrollAnim);
+      scrollAnim = null;
+    }
+    scrollTarget = roadWrap.scrollLeft;
+    return;
+  }
   if (e.button !== 0 || e.target.closest(".node-del")) return;
   momentum = 0;
   scrollTarget = roadWrap.scrollLeft;
@@ -883,6 +898,17 @@ function endDrag(e) {
 }
 roadWrap.addEventListener("pointerup", endDrag);
 roadWrap.addEventListener("pointercancel", endDrag);
+
+// keep the scripted scroll's target in step with where a native swipe left the road
+roadWrap.addEventListener(
+  "scroll",
+  () => {
+    if (scrollAnim || drag) return;
+    scrollTarget = roadWrap.scrollLeft;
+    if (Date.now() - lastTouchAt < 3000) userScrolled = true;
+  },
+  { passive: true }
+);
 
 // a drag must not also count as a click on the circle it started on
 roadWrap.addEventListener(
