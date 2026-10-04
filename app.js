@@ -168,6 +168,15 @@ function previewApi() {
         [st.goals[i], st.goals[j]] = [st.goals[j], st.goals[i]];
         st.orderAt = Date.now();
       }),
+    reorder_goals: async (order) =>
+      edit((st) => {
+        const byId = new Map(st.goals.map((g) => [g.id, g]));
+        const seen = order.filter((i) => byId.has(i));
+        const next = [...seen.map((i) => byId.get(i)), ...st.goals.filter((g) => !seen.includes(g.id))];
+        if (next.every((g, k) => g === st.goals[k])) return;
+        st.goals = next;
+        st.orderAt = Date.now();
+      }),
     set_reminder: async (enabled, time) =>
       quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
 

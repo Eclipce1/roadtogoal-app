@@ -146,10 +146,7 @@ function goalRow(g, isFirst, isLast) {
           <span class="tree-bar"><i style="transform: scaleX(${total ? done / total : 0})"></i></span>
           <span class="tree-count">${done}/${total}</span>
         </span>
-        <span class="tree-order">
-          <button type="button" class="tree-move" data-act="move-up" title="Переместить выше" ${isFirst ? "disabled" : ""}>↑</button>
-          <button type="button" class="tree-move" data-act="move-down" title="Переместить ниже" ${isLast ? "disabled" : ""}>↓</button>
-        </span>
+        <span class="goal-grip" title="Зажми и перетащи, чтобы поменять порядок">⠿</span>
         <button type="button" class="tree-del" data-act="delete" title="Удалить цель">✕</button>
       </div>
       <div class="tree-children"><div class="tree-children-inner">${steps}</div></div>
@@ -288,6 +285,7 @@ async function switchGoal(id) {
 }
 
 goalsPanel.addEventListener("click", async (e) => {
+  if (e.target.closest(".goal-grip")) return; // the handle only drags; it must not open the goal
   const el = e.target.closest("[data-act]");
   if (!el) return;
   const act = el.dataset.act;
@@ -404,3 +402,93 @@ document.addEventListener(
 
 updateNavRail();
 window.addEventListener("DOMContentLoaded", introduceRail);
+
+/* ---------- hold the ⠿ handle and drag a goal to a new place in the list ---------- */
+
+let goalDrag = null; // { id, el, pointerId, targetId, before, scroller, y }
+let goalDragRaf = 0;
+
+function clearGoalDragMarks() {
+  goalsPanel
+    .querySelectorAll(".tree-goal.drag-over-top, .tree-goal.drag-over-bottom")
+    .forEach((el) => el.classList.remove("drag-over-top", "drag-over-bottom"));
+}
+
+function goalDragMark(clientY) {
+  clearGoalDragMarks();
+  const over = document.elementFromPoint(goalDrag.x, clientY);
+  const row = over && over.closest(".tree-goal");
+  if (!row || +row.dataset.goal === goalDrag.id) {
+    goalDrag.targetId = null;
+    return;
+  }
+  const r = row.getBoundingClientRect();
+  goalDrag.targetId = +row.dataset.goal;
+  goalDrag.before = clientY < r.top + Math.min(r.height, 56) / 2;
+  row.classList.add(goalDrag.before ? "drag-over-top" : "drag-over-bottom");
+}
+
+// near the top/bottom edge of the list a held finger keeps scrolling it
+function goalDragScroll() {
+  goalDragRaf = 0;
+  if (!goalDrag || !goalDrag.scroller) return;
+  const r = goalDrag.scroller.getBoundingClientRect();
+  const edge = 56;
+  let dy = 0;
+  if (goalDrag.y < r.top + edge) dy = -Math.ceil((r.top + edge - goalDrag.y) / 4);
+  else if (goalDrag.y > r.bottom - edge) dy = Math.ceil((goalDrag.y - (r.bottom - edge)) / 4);
+  if (dy) {
+    goalDrag.scroller.scrollTop += dy;
+    goalDragMark(goalDrag.y);
+    goalDragRaf = requestAnimationFrame(goalDragScroll);
+  }
+}
+
+goalsPanel.addEventListener("pointerdown", (e) => {
+  const grip = e.target.closest(".goal-grip");
+  if (!grip || (e.pointerType === "mouse" && e.button !== 0)) return;
+  const el = grip.closest(".tree-goal");
+  goalDrag = {
+    id: +el.dataset.goal,
+    el,
+    pointerId: e.pointerId,
+    targetId: null,
+    before: true,
+    scroller: goalsPanel.querySelector(".goals-list"),
+    x: e.clientX,
+    y: e.clientY,
+  };
+  el.classList.add("dragging");
+  try {
+    grip.setPointerCapture(e.pointerId);
+  } catch {
+    /* the pointer is already gone; the drag simply ends on the next event */
+  }
+  e.preventDefault();
+});
+
+goalsPanel.addEventListener("pointermove", (e) => {
+  if (!goalDrag || e.pointerId !== goalDrag.pointerId) return;
+  goalDrag.x = e.clientX;
+  goalDrag.y = e.clientY;
+  goalDragMark(e.clientY);
+  if (!goalDragRaf) goalDragRaf = requestAnimationFrame(goalDragScroll);
+});
+
+async function endGoalDrag(e, commit) {
+  if (!goalDrag || e.pointerId !== goalDrag.pointerId) return;
+  const { id, el, targetId, before } = goalDrag;
+  goalDrag = null;
+  el.classList.remove("dragging");
+  clearGoalDragMarks();
+  if (!commit || targetId === null) return;
+  const ids = lastData.goals.map((g) => g.id).filter((x) => x !== id);
+  let at = ids.indexOf(targetId);
+  if (at === -1) return;
+  if (!before) at += 1;
+  ids.splice(at, 0, id);
+  lastData = await api.reorder_goals(ids);
+  renderGoals();
+}
+goalsPanel.addEventListener("pointerup", (e) => endGoalDrag(e, true));
+goalsPanel.addEventListener("pointercancel", (e) => endGoalDrag(e, false));
