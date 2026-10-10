@@ -38,6 +38,13 @@
       <span>Планирование</span>
       <i id="planNavDot" class="goals-nav-dot" hidden></i>
     </button>
+    <button type="button" class="goals-nav-btn" data-nav="study">
+      <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 8l8-4 8 4-8 4-8-4Z"/><path d="M5.5 10.2v3.6c0 1.1 2.1 2.2 4.5 2.2s4.5-1.1 4.5-2.2v-3.6" opacity=".7"/><path d="M18 8v4.5" opacity=".7"/>
+      </svg>
+      <span>Учёба</span>
+      <i id="studyNavDot" class="goals-nav-dot alert" hidden></i>
+    </button>
     <div class="nav-hint">Панель выезжает, когда курсор у левого края</div>
     <!-- the tab that makes the hidden panel findable at all -->
     <button type="button" id="navHandle" class="nav-handle" title="Открыть панель">
@@ -136,6 +143,7 @@
   <script src="graph.js"></script>
   <script src="goals.js"></script>
   <script src="agenda.js"></script>
+  <script src="study.js"></script>
   <script src="sync.js"></script>
   <script>
     // installed on a phone: lets the app open without a connection (the Windows app has no use for it)

@@ -146,6 +146,24 @@ const Sync = (() => {
       if (Math.max(lt, rt)) out.daysAt[day] = Math.max(lt, rt);
     }
 
+    // study subjects (tasks inside): like goals, the later change to a whole subject wins
+    const subTomb = { ...(remote.deletedSubjects || {}) };
+    for (const [id, ts] of Object.entries(local.deletedSubjects || {})) subTomb[id] = Math.max(num(subTomb[id]), num(ts));
+    const subs = new Map((local.subjects || []).map((x) => [x.id, x]));
+    for (const x of remote.subjects || []) {
+      const mine = subs.get(x.id);
+      subs.set(x.id, mine ? pickNewer(mine, x, (y) => y.updatedAt) : x);
+    }
+    for (const [id, ts] of Object.entries(subTomb)) {
+      const x = subs.get(id);
+      if (x && num(x.updatedAt) <= num(ts)) subs.delete(id);
+    }
+    // creation order: whichever device knew a subject first keeps it ahead
+    const subOrder = [];
+    for (const x of [...(local.subjects || []), ...(remote.subjects || [])]) if (subs.has(x.id) && !subOrder.includes(x.id)) subOrder.push(x.id);
+    out.subjects = subOrder.map((id) => clone(subs.get(id)));
+    out.deletedSubjects = subTomb;
+
     out.nextPlanId = Math.max(num(local.nextPlanId) || 1, num(remote.nextPlanId) || 1);
     out.version = Math.max(num(local.version), num(remote.version)) || 3;
     return out;

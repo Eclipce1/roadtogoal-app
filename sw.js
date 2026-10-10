@@ -1,6 +1,6 @@
 // Keeps the app opening with no connection. Network first, so a new version
 // always wins when there is a connection; the cache is only the fallback.
-const CACHE = "roadtogoal-shell-v3";
+const CACHE = "roadtogoal-shell-v4";
 const SHELL = [
   "./",
   "./index.html",
@@ -20,6 +20,7 @@ const SHELL = [
   "./graph.js",
   "./goals.js",
   "./agenda.js",
+  "./study.js",
   "./sync.js",
 ];
 

@@ -44,6 +44,8 @@ function previewApi() {
     st.plans = st.plans || {};
     st.marks = st.marks || {};
     st.nextPlanId = st.nextPlanId || 1;
+    st.subjects = Array.isArray(st.subjects) ? st.subjects : [];
+    st.deletedSubjects = st.deletedSubjects || {};
     st.version = st.version || 3;
     st.goals.forEach((g) => (g.updatedAt = g.updatedAt || 0));
     return st;
@@ -105,6 +107,7 @@ function previewApi() {
     if (e.key === KEY && !dirty) cache = null;
   });
   // a copy that shares the (immutable) strings: photos are not duplicated byte by byte
+  const newId = () => Math.random().toString(16).slice(2, 10).padEnd(8, "0");
   const copy = (x) =>
     Array.isArray(x)
       ? x.map(copy)
@@ -140,6 +143,7 @@ function previewApi() {
       })),
       plans: st.plans || {},
       marks: st.marks || {},
+      subjects: copy(st.subjects || []),
     };
   };
   // goalId is optional: the analytics screen addresses goals other than the active one.
@@ -222,6 +226,59 @@ function previewApi() {
         if (next.every((g, k) => g === st.goals[k])) return;
         st.goals = next;
         st.orderAt = Date.now();
+      }),
+    // ---- study: subjects and their tasks (ids are random, so two devices never collide) ----
+    add_subject: async (name) =>
+      edit((st) => {
+        name = String(name || "").trim().slice(0, 80);
+        if (name) st.subjects.push({ id: newId(), name, updatedAt: Date.now(), tasks: [] });
+      }),
+    rename_subject: async (id, name) =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === id);
+        name = String(name || "").trim().slice(0, 80);
+        if (sub && name) {
+          sub.name = name;
+          sub.updatedAt = Date.now();
+        }
+      }),
+    delete_subject: async (id) =>
+      edit((st) => {
+        if (!st.subjects.some((x) => x.id === id)) return;
+        st.subjects = st.subjects.filter((x) => x.id !== id);
+        st.deletedSubjects[id] = Date.now();
+      }),
+    add_task: async (subjectId, title, text = "", due = "") =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === subjectId);
+        title = String(title || "").trim().slice(0, 200);
+        if (!sub || !title) return;
+        sub.tasks.push({
+          id: newId(), title, text: String(text || "").slice(0, 20000),
+          due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : "", status: "new", doneAt: "",
+        });
+        sub.updatedAt = Date.now();
+      }),
+    update_task: async (subjectId, taskId, patch) =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === subjectId);
+        const task = sub && sub.tasks.find((t) => t.id === taskId);
+        if (!task || !patch) return;
+        if ("title" in patch && String(patch.title).trim()) task.title = String(patch.title).trim().slice(0, 200);
+        if ("text" in patch) task.text = String(patch.text).slice(0, 20000);
+        if ("due" in patch) task.due = /^\d{4}-\d{2}-\d{2}$/.test(patch.due) ? patch.due : "";
+        if (["new", "doing", "done"].includes(patch.status)) {
+          task.status = patch.status;
+          task.doneAt = patch.status === "done" ? today() : "";
+        }
+        sub.updatedAt = Date.now();
+      }),
+    delete_task: async (subjectId, taskId) =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === subjectId);
+        if (!sub) return;
+        sub.tasks = sub.tasks.filter((t) => t.id !== taskId);
+        sub.updatedAt = Date.now();
       }),
     set_reminder: async (enabled, time) =>
       quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),

@@ -6,7 +6,7 @@ const goalsPanel = goalsEl.querySelector(".goals-panel");
 const expandedGoals = new Set();
 // the constellation is too small to read on a phone; there the list is the way in
 let goalsMode = window.matchMedia("(max-width: 700px)").matches ? "list" : "graph";
-let goalsSection = "goals"; // "goals" | "plan" — the nav-rail tabs
+let goalsSection = "goals"; // "goals" | "plan" | "study" — the nav-rail tabs
 
 // section is optional: pass it to jump straight to a tab, or omit to keep the current one
 function openGoals(section) {
@@ -36,6 +36,9 @@ function updateNavRail() {
     dot.hidden = !overdue && !todayLeft;
     dot.classList.toggle("alert", overdue);
   }
+  // the study tab shows a red dot while a task is past its date
+  const studyDot = document.getElementById("studyNavDot");
+  if (studyDot && lastData) studyDot.hidden = studyCounts().late === 0;
 }
 
 navRail.addEventListener("click", (e) => {
@@ -195,7 +198,8 @@ function renderGoals() {
   const scrollTop = oldScroller ? oldScroller.scrollTop : 0;
 
   goalsPanel.innerHTML =
-    goalsSection === "plan" ? agendaMainHtml() : goalsMainHtml();
+    goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsMainHtml();
+  if (goalsSection === "study") studyFit();
   if (goalsSection === "goals" && goalsMode === "graph") Graph.mount(goalsPanel.querySelector(".graph"), lastData);
   else Graph.stop();
   updateNavRail();

@@ -3527,3 +3527,89 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 }
 .greet-alt:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.45); }
 .greet-alt:active { transform: scale(0.97); }
+
+/* ---------- Study: subjects and their task squares ---------- */
+
+.study-sub {
+  margin-bottom: 14px;
+  padding: 14px 16px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+.study-sub-head { display: flex; align-items: center; gap: 10px; }
+.study-name {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 500;
+}
+.study-name:hover { border-color: var(--line); }
+.study-name:focus { outline: none; border-color: rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.04); }
+.study-count { font-size: 13px; color: var(--text-3); white-space: nowrap; }
+.study-x {
+  width: 28px; height: 28px; border: none; border-radius: 8px; background: transparent;
+  color: var(--text-3); cursor: pointer; font-size: 12px;
+}
+.study-x:hover { color: #e08585; background: rgba(255, 255, 255, 0.05); }
+
+.study-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.study-sq {
+  width: 30px; height: 30px; padding: 0; border-radius: 8px; cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  transition: transform 0.12s;
+}
+.study-sq:active { transform: scale(0.92); }
+.study-sq.doing { background: var(--sky); border-color: var(--sky); }
+.study-sq.done { background: var(--green); border-color: var(--green); }
+.study-sq.late { background: #ef4444; border-color: #ef4444; }
+.study-sq.sel { outline: 2px solid #fff; outline-offset: 2px; }
+.study-sq.add {
+  background: transparent; border: 1px dashed rgba(255, 255, 255, 0.3);
+  color: var(--text-2); font-size: 18px; line-height: 1;
+}
+.study-sq.add:hover { border-color: rgba(255, 255, 255, 0.6); color: var(--text); }
+
+.study-form, .study-detail {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line);
+}
+.study-form .wiz-input, .study-detail .wiz-input { width: 100%; text-align: left; }
+.study-form textarea.wiz-input, .study-detail textarea.wiz-input {
+  resize: none; min-height: 84px; line-height: 1.5; font-family: inherit; overflow: hidden;
+}
+.study-due-label { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--text-3); }
+.study-due-label .wiz-input[type="date"] { text-align: left; min-height: 46px; }
+.study-detail-state { font-size: 13px; color: var(--text-2); }
+.study-detail-state.late { color: #f87171; }
+.study-detail-state.done { color: var(--green); }
+.study-detail-state.doing { color: var(--sky); }
+
+.study-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.study-btn {
+  padding: 10px 16px; border-radius: 999px; cursor: pointer; font: inherit; font-size: 14px;
+  background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.study-btn:hover { background: rgba(255, 255, 255, 0.07); }
+.study-btn.primary { background: var(--white); color: #000; border-color: var(--white); font-weight: 600; }
+.study-btn.primary:hover { box-shadow: 0 0 18px rgba(255, 255, 255, 0.3); background: var(--white); }
+.study-btn.danger { margin-left: auto; color: #e08585; border-color: rgba(224, 133, 133, 0.35); }
+
+.study-newsub { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.study-newsub .wiz-input { flex: 1; min-width: 180px; text-align: left; }
+.study-empty { padding: 30px 6px; color: var(--text-2); line-height: 1.6; font-size: 14.5px; }
+.study-empty p { margin: 0 0 10px; }
+.study-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; font-size: 12px; color: var(--text-3); }
+.study-legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: rgba(255, 255, 255, 0.12); }
+.study-legend i.doing { background: var(--sky); }
+.study-legend i.done { background: var(--green); }
+.study-legend i.late { background: #ef4444; }
+@media (hover: none) { .study-sq { width: 34px; height: 34px; } }
