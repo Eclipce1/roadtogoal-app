@@ -4,6 +4,27 @@ let studySel = null; // { sid, tid } — the task whose card is open
 let studyAdding = null; // subject id whose "new task" form is open
 let studyNewSubject = false; // the "new subject" field at the top is open
 
+// how the page is looked at — kept on this device only
+const STUDY_PREFS_KEY = "roadtogoal_study_prefs";
+function loadStudyPrefs() {
+  try {
+    return JSON.parse(localStorage.getItem(STUDY_PREFS_KEY) || "{}") || {};
+  } catch (e) {
+    return {};
+  }
+}
+const studyPrefs = loadStudyPrefs();
+let studyView = studyPrefs.view === "deadlines" ? "deadlines" : "subjects"; // "subjects" | "deadlines"
+let studyHideDone = !!studyPrefs.hideDone;
+let studySortDue = !!studyPrefs.sortDue;
+function saveStudyPrefs() {
+  try {
+    localStorage.setItem(STUDY_PREFS_KEY, JSON.stringify({ view: studyView, hideDone: studyHideDone, sortDue: studySortDue }));
+  } catch (e) {
+    /* storage blocked: the choice simply isn't remembered */
+  }
+}
+
 const STUDY_STATE_NAME = { new: "Новое", doing: "В работе", done: "Сделано", late: "Просрочено" };
 
 function studySubjects() {
@@ -118,6 +139,20 @@ function studyDetailHtml(s, t) {
     </div>`;
 }
 
+// nearest date first, finished ones after the unfinished, no date last
+function byDue(a, b) {
+  const done = (a.status === "done") - (b.status === "done");
+  if (done) return done;
+  return (a.due || "9999-99-99").localeCompare(b.due || "9999-99-99");
+}
+
+function studyShownTasks(s) {
+  const open = studySel && studySel.sid === s.id ? studySel.tid : null;
+  let list = s.tasks.filter((t) => !(studyHideDone && t.status === "done" && t.id !== open));
+  if (studySortDue) list = list.slice().sort(byDue);
+  return list;
+}
+
 function studySubjectHtml(s) {
   const done = s.tasks.filter((t) => t.status === "done").length;
   const picked = studySel && studySel.sid === s.id ? s.tasks.find((t) => t.id === studySel.tid) : null;
@@ -129,12 +164,67 @@ function studySubjectHtml(s) {
         <button type="button" class="study-x" data-act="study-del-subject" title="Удалить предмет">✕</button>
       </div>
       <div class="study-grid">
-        ${s.tasks.map((t) => studySquareHtml(s, t)).join("")}
+        ${studyShownTasks(s).map((t) => studySquareHtml(s, t)).join("")}
         <button type="button" class="study-sq add" data-act="study-add" title="Новое задание" aria-label="Новое задание">+</button>
       </div>
       ${studyAdding === s.id ? studyFormHtml(s) : ""}
       ${picked ? studyDetailHtml(s, picked) : ""}
     </section>`;
+}
+
+function studyBarHtml() {
+  const chip = (act, on, text) => `<button type="button" class="study-chip${on ? " on" : ""}" data-act="${act}">${text}</button>`;
+  return `
+    <div class="study-bar">
+      <div class="seg">
+        <button type="button" data-act="study-view" data-to="subjects" class="${studyView === "subjects" ? "on" : ""}">Предметы</button>
+        <button type="button" data-act="study-view" data-to="deadlines" class="${studyView === "deadlines" ? "on" : ""}">Сроки</button>
+      </div>
+      <div class="study-chips">
+        ${chip("study-hide-done", studyHideDone, "Без сделанных")}
+        ${studyView === "subjects" ? chip("study-sort-due", studySortDue, "По сроку") : ""}
+      </div>
+    </div>`;
+}
+
+// every task of every subject in one list, grouped by how soon it is due
+function studyDeadlinesHtml() {
+  const today = todayISO();
+  const rows = [];
+  for (const s of studySubjects()) for (const t of s.tasks) rows.push({ s, t });
+  const groups = [
+    ["late", "Просрочено", (r) => taskState(r.t) === "late"],
+    ["today", "Сегодня", (r) => r.t.status !== "done" && r.t.due === today],
+    ["tomorrow", "Завтра", (r) => r.t.status !== "done" && r.t.due === shiftISO(today, 1)],
+    ["week", "В ближайшую неделю", (r) => r.t.status !== "done" && r.t.due > shiftISO(today, 1) && r.t.due <= shiftISO(today, 7)],
+    ["later", "Позже", (r) => r.t.status !== "done" && r.t.due > shiftISO(today, 7)],
+    ["none", "Без срока", (r) => r.t.status !== "done" && !r.t.due],
+  ];
+  if (!studyHideDone) groups.push(["done", "Сделано", (r) => r.t.status === "done"]);
+
+  const html = groups
+    .map(([key, title, test]) => {
+      const list = rows.filter(test).sort((a, b) => byDue(a.t, b.t) || a.s.name.localeCompare(b.s.name));
+      if (!list.length) return "";
+      return `
+        <div class="study-group ${key}">
+          <div class="study-group-title">${title} <span>${list.length}</span></div>
+          ${list
+            .map(
+              ({ s, t }) => `
+            <button type="button" class="study-row" data-act="study-jump" data-sid="${s.id}" data-tid="${t.id}">
+              <i class="study-dot ${taskState(t)}"></i>
+              <span class="study-row-main">
+                <span class="study-row-title">${escapeHtml(t.title)}</span>
+                <span class="study-row-sub">${escapeHtml(s.name)} · ${escapeHtml(dueText(t))}</span>
+              </span>
+            </button>`
+            )
+            .join("")}
+        </div>`;
+    })
+    .join("");
+  return html || `<div class="study-empty"><p>Здесь пока пусто: все задания сделаны.</p></div>`;
 }
 
 function studyMainHtml() {
@@ -154,6 +244,8 @@ function studyMainHtml() {
       </div>
     </div>
     <div class="goals-list study">
+      ${subjects.length ? studyBarHtml() : ""}
+      ${studyView === "deadlines" && subjects.length ? studyDeadlinesHtml() : ""}
       ${
         studyNewSubject
           ? `<div class="study-newsub">
@@ -164,7 +256,9 @@ function studyMainHtml() {
           : ""
       }
       ${
-        subjects.length
+        studyView === "deadlines" && subjects.length
+          ? ""
+          : subjects.length
           ? subjects.map(studySubjectHtml).join("")
           : `<div class="study-empty">
                <p>Здесь будут ваши предметы и задания.</p>
@@ -242,7 +336,27 @@ goalsPanel.addEventListener("click", async (e) => {
   const act = el.dataset.act;
   const { sid, tid } = studyIds(el);
 
-  if (act === "study-new-subject") {
+  if (act === "study-view") {
+    studyView = el.dataset.to;
+    saveStudyPrefs();
+    studyRender();
+  } else if (act === "study-hide-done") {
+    studyHideDone = !studyHideDone;
+    saveStudyPrefs();
+    studyRender();
+  } else if (act === "study-sort-due") {
+    studySortDue = !studySortDue;
+    saveStudyPrefs();
+    studyRender();
+  } else if (act === "study-jump") {
+    studyView = "subjects";
+    studySel = { sid: el.dataset.sid, tid: el.dataset.tid };
+    studyAdding = null;
+    saveStudyPrefs();
+    studyRender();
+    const card = goalsPanel.querySelector(`.study-sub[data-sid="${el.dataset.sid}"]`);
+    if (card) card.scrollIntoView({ block: "start" });
+  } else if (act === "study-new-subject") {
     studyNewSubject = true;
     studyRender(".study-newsub-name");
   } else if (act === "study-cancel-subject") {
