@@ -1166,6 +1166,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   const data = await api.get_data();
   render(data, { scrollToCurrent: true });
   if (typeof Sync !== "undefined") Sync.start();
+  // with a server configured, a visitor first signs in (or chooses to go on without an account)
+  if (typeof Auth !== "undefined" && Auth.enabled() && !Auth.signedIn() && !Auth.skipped()) await Auth.showScreen("login");
   showGreetScreen((section) => {
     openGoals(section);
     afterStart(data);

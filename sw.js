@@ -21,6 +21,8 @@ const SHELL = [
   "./goals.js",
   "./agenda.js",
   "./study.js",
+  "./auth.js",
+  "./config.js",
   "./sync.js",
 ];
 

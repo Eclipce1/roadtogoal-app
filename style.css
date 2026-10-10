@@ -3666,3 +3666,25 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 /* a plan item held over a calendar day: that day lights up */
 .cal-day.drop-target { outline: 2px solid var(--sky); outline-offset: -2px; background: rgba(125, 211, 252, 0.18); }
 .cal-nav.drop-target { color: var(--sky); background: rgba(125, 211, 252, 0.14); }
+
+/* ---------- Sign-in screen and the account button ---------- */
+body.local .remind-wrap.auth-wrap { display: block; }
+.auth-overlay { background: #000; }
+.auth-card { width: min(380px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.auth-mark { color: var(--white); margin-bottom: 6px; }
+.auth-title { margin: 0; font-size: 26px; font-weight: 600; letter-spacing: -0.01em; }
+.auth-sub { margin: 4px 0 18px; font-size: 14.5px; line-height: 1.5; color: var(--text-2); }
+.auth-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.auth-form .wiz-input { width: 100%; text-align: left; }
+.auth-consent { display: flex; gap: 10px; align-items: flex-start; text-align: left; font-size: 12.5px; line-height: 1.45; color: var(--text-3); cursor: pointer; }
+.auth-consent input { margin-top: 2px; flex-shrink: 0; width: 17px; height: 17px; accent-color: #fff; }
+.auth-consent a { color: var(--text-2); text-decoration: underline; }
+.auth-error { margin: 0; text-align: left; font-size: 13px; color: #f0a0a0; }
+.auth-form .auth-go { width: 100%; margin-top: 6px; padding: 14px 24px; opacity: 1; animation: none; font-size: 16px; }
+.auth-form .auth-go:disabled { opacity: 0.55; cursor: default; }
+.auth-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; margin-top: 14px; }
+.auth-links button, .auth-skip { background: none; border: none; font: inherit; font-size: 14px; color: var(--text-2); cursor: pointer; padding: 6px 2px; }
+.auth-links button:hover, .auth-skip:hover { color: var(--text); }
+.auth-skip { margin-top: 14px; color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
+.auth-email-line { word-break: break-all; }
+@media (max-width: 700px) { .auth-wrap .remind-pop { position: fixed; left: 12px; right: 12px; top: 120px; width: auto; } }

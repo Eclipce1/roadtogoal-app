@@ -451,6 +451,7 @@ const Sync = (() => {
   const hhmm = (ms) => new Date(ms).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
 
   function controlHtml() {
+    if (typeof Auth !== "undefined" && Auth.enabled()) return ""; // accounts replace the GitHub link
     const on = !!cfg.token;
     let body;
     if (!on) {
