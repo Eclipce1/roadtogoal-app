@@ -23,6 +23,7 @@ const Sync = (() => {
   let running = false;
   let again = false;
   let remoteCache = null; // {etag, sha, core}
+  let retryMs = 7500; // grows while syncing keeps failing
   let lastFp = ""; // fingerprint of the local data at the end of the last sync
   const hashOf = new Map(); // photo data URL -> short hash
 
@@ -387,6 +388,12 @@ const Sync = (() => {
       if (again) {
         again = false;
         schedule(500);
+      } else if (state.error && cfg.token && !/Токен|Нет доступа/.test(state.error)) {
+        // a dropped connection should heal by itself, not wait for the next poll or a tap
+        retryMs = Math.min(retryMs * 2, 120000);
+        schedule(retryMs);
+      } else if (!state.error) {
+        retryMs = 7500;
       }
     }
   }

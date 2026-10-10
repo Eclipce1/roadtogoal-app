@@ -1,7 +1,6 @@
 // Daily check-in with the "never miss twice" rule, and the weekly review.
 
 const WEEKDAYS = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-const REVIEW_EVERY_DAYS = 7;
 
 function shiftISO(iso, delta) {
   const d = new Date(iso + "T00:00:00");
@@ -274,18 +273,35 @@ function latestDecision(data) {
   return r.length ? r[r.length - 1].next : "";
 }
 
+// The review closes a week: it is offered on Sunday from 18:00, and once more on Monday for
+// someone who missed the evening. Saving it (or having one dated after that Sunday) ends it.
+const REVIEW_FROM_HOUR = 18;
+
+// the Sunday this review is about, or "" when no review is on offer right now
+function reviewWeekEnd() {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday, 1 = Monday
+  if (day === 0 && now.getHours() >= REVIEW_FROM_HOUR) return todayISO();
+  if (day === 1) return shiftISO(todayISO(), -1);
+  return "";
+}
+
 function reviewDue(data) {
   if (!data.createdAt || data.reviewSnoozedOn === todayISO()) return false;
-  return daysBetween(lastReviewDate(data), todayISO()) >= REVIEW_EVERY_DAYS;
+  const end = reviewWeekEnd();
+  if (!end) return false;
+  if (daysBetween(data.createdAt, end) < 3) return false; // a goal that only just began has no week to review
+  return lastReviewDate(data) < end;
 }
 
 function weekStats(data) {
-  const from = shiftISO(todayISO(), -6);
+  const end = reviewWeekEnd() || todayISO();
+  const from = shiftISO(end, -6);
   let days;
   if (data.mode === "clean") days = Math.min(7, cleanDays(data));
-  else if (data.mode === "number") days = Object.keys(data.log || {}).filter((d) => d >= from).length;
-  else days = (data.checkins || []).filter((d) => d >= from).length;
-  const steps = data.subGoals.filter((g) => g.doneAt && g.doneAt >= from).length;
+  else if (data.mode === "number") days = Object.keys(data.log || {}).filter((d) => d >= from && d <= end).length;
+  else days = (data.checkins || []).filter((d) => d >= from && d <= end).length;
+  const steps = data.subGoals.filter((g) => g.doneAt && g.doneAt >= from && g.doneAt <= end).length;
   return { days, steps };
 }
 
@@ -358,3 +374,12 @@ function maybeShowReview(data) {
   openReview(data);
   return true;
 }
+
+// an app left open all evening gets its Sunday review when 18:00 arrives, not only on launch
+setInterval(() => {
+  if (!lastData || document.visibilityState !== "visible") return;
+  const a = document.activeElement;
+  const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA");
+  const busy = document.querySelector(".overlay.open") || (typeof card !== "undefined" && card) || typing;
+  if (!busy) maybeShowReview(lastData);
+}, 60000);

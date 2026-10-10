@@ -55,9 +55,11 @@ function previewApi() {
     // with the real data instead of merging it in or pushing it anywhere
     return withSyncFields({
       fresh: true,
-      activeGoalId: 1,
+      // an id no goal made on the computer will ever have: if this demo goal gets edited
+      // before the first sync, it must not overwrite a real goal that happens to be number 1
+      activeGoalId: 99999,
       goals: [
-        newGoal(1, {
+        newGoal(99999, {
           mainGoal: "Моя цель",
           subGoals: [
             { id: 1, title: "Первый шаг", reward: "🎯", done: false },
@@ -876,6 +878,7 @@ function clampScroll(x) {
 
 function runScroll() {
   if (scrollAnim) return;
+  let frames = 0;
   const tick = () => {
     if (momentum) {
       scrollTarget = clampScroll(scrollTarget + momentum);
@@ -884,8 +887,12 @@ function runScroll() {
     }
     const cur = roadWrap.scrollLeft;
     const diff = scrollTarget - cur;
-    if (Math.abs(diff) < 0.5 && !momentum) {
+    // A browser that rounds scrollLeft to whole pixels can leave a gap of a pixel or two that
+    // the easing never closes, and the loop would then run (and block syncing) forever:
+    // a smooth glide is over well within two seconds, so stop there and land on the target.
+    if ((Math.abs(diff) < 0.5 && !momentum) || ++frames > 150) {
       roadWrap.scrollLeft = scrollTarget;
+      momentum = 0;
       scrollAnim = null;
       return;
     }
