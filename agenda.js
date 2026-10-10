@@ -526,10 +526,19 @@ goalsPanel.addEventListener("dragend", (e) => {
   const row = e.target.closest(".agenda-item");
   if (row) row.classList.remove("dragging");
   clearDragMarks();
+  hoverCalendar(null);
   dragItemId = null;
 });
 
 goalsPanel.addEventListener("dragover", (e) => {
+  if (dragItemId !== null) {
+    const spot = e.target.closest(".cal-day, .cal-nav");
+    if (spot) {
+      e.preventDefault(); // makes the day a place the item can be dropped
+      e.dataTransfer.dropEffect = "move";
+      hoverCalendar(spot);
+    } else hoverCalendar(null);
+  }
   const row = e.target.closest(".agenda-item");
   if (!row || dragItemId === null) return;
   e.preventDefault(); // required for the row to accept a drop at all
@@ -560,6 +569,16 @@ async function moveAgendaItem(itemId, targetId, before) {
 }
 
 goalsPanel.addEventListener("drop", (e) => {
+  const day = e.target.closest(".cal-day");
+  if (day && dragItemId !== null) {
+    e.preventDefault();
+    const id = dragItemId;
+    dragItemId = null;
+    hoverCalendar(null);
+    clearDragMarks();
+    moveAgendaItemToDay(id, day.dataset.day);
+    return;
+  }
   const row = e.target.closest(".agenda-item");
   if (!row || dragItemId === null) return;
   e.preventDefault();
@@ -567,6 +586,44 @@ goalsPanel.addEventListener("drop", (e) => {
   clearDragMarks();
   moveAgendaItem(dragItemId, +row.dataset.id, before);
 });
+
+/* ---------- dropping a plan item on a calendar day moves it there ---------- */
+
+// While an item is held over the ‹ › arrows the grid turns the page by itself, so a day in
+// another month can be reached too. Only the calendar is redrawn: the item being dragged
+// must stay where it is, or the drag would end.
+let calHover = null; // { key, timer }
+
+function hoverCalendar(spot) {
+  goalsPanel.querySelectorAll(".cal-day.drop-target, .cal-nav.drop-target").forEach((el) => {
+    if (el !== spot) el.classList.remove("drop-target");
+  });
+  const nav = spot && spot.classList.contains("cal-nav") ? spot : null;
+  if (spot) spot.classList.add("drop-target");
+  if (!nav) {
+    if (calHover) clearTimeout(calHover.timer);
+    calHover = null;
+    return;
+  }
+  const delta = +nav.dataset.delta;
+  if (calHover && calHover.key === delta) return;
+  if (calHover) clearTimeout(calHover.timer);
+  calHover = {
+    key: delta,
+    timer: setTimeout(() => {
+      calHover = null;
+      agendaMonth = shiftMonth(agendaMonth, delta);
+      const cal = goalsPanel.querySelector(".cal");
+      if (cal) cal.outerHTML = agendaCalendarHtml();
+    }, 650),
+  };
+}
+
+async function moveAgendaItemToDay(itemId, day) {
+  if (!day || day === agendaDay) return;
+  lastData = await api.move_plan_item(agendaDay, itemId, day);
+  renderGoals();
+}
 
 /* Fingers don't fire HTML5 drag events, so on a touchscreen the ⠿ handle is driven by
    pointer events instead: hold it, slide over another row, let go. */
@@ -591,6 +648,13 @@ goalsPanel.addEventListener("pointermove", (e) => {
   if (!touchDrag || e.pointerId !== touchDrag.pointerId) return;
   clearDragMarks();
   const over = document.elementFromPoint(e.clientX, e.clientY);
+  const spot = over && over.closest(".cal-day, .cal-nav");
+  hoverCalendar(spot);
+  touchDrag.targetDay = spot && spot.classList.contains("cal-day") ? spot.dataset.day : null;
+  if (touchDrag.targetDay) {
+    touchDrag.targetId = null;
+    return;
+  }
   const row = over && over.closest(".agenda-item");
   if (!row || +row.dataset.id === touchDrag.id) {
     touchDrag.targetId = null;
@@ -604,11 +668,13 @@ goalsPanel.addEventListener("pointermove", (e) => {
 
 function endTouchDrag(e, commit) {
   if (!touchDrag || e.pointerId !== touchDrag.pointerId) return;
-  const { id, row, targetId, before } = touchDrag;
+  const { id, row, targetId, before, targetDay } = touchDrag;
   touchDrag = null;
   row.classList.remove("dragging");
   clearDragMarks();
-  if (commit && targetId !== null) moveAgendaItem(id, targetId, before);
+  hoverCalendar(null);
+  if (commit && targetDay) moveAgendaItemToDay(id, targetDay);
+  else if (commit && targetId !== null) moveAgendaItem(id, targetId, before);
 }
 goalsPanel.addEventListener("pointerup", (e) => endTouchDrag(e, true));
 goalsPanel.addEventListener("pointercancel", (e) => endTouchDrag(e, false));

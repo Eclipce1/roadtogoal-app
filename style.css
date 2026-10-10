@@ -3660,3 +3660,7 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 .study-row-title { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .study-row-sub { font-size: 12.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .study-group.done .study-row-title { color: var(--text-2); }
+
+/* a plan item held over a calendar day: that day lights up */
+.cal-day.drop-target { outline: 2px solid var(--sky); outline-offset: -2px; background: rgba(125, 211, 252, 0.18); }
+.cal-nav.drop-target { color: var(--sky); background: rgba(125, 211, 252, 0.14); }

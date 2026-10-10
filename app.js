@@ -477,6 +477,20 @@ function previewApi() {
         st.plans[day] = st.plans[day].filter((it) => it.id !== itemId);
         st.daysAt[day] = Date.now();
       }),
+    move_plan_item: async (fromDay, itemId, toDay) =>
+      edit((st) => {
+        const cutoff = (() => {
+          const d = new Date();
+          d.setDate(d.getDate() - 60);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        })();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(toDay) || toDay === fromDay || toDay < cutoff) return;
+        const item = (st.plans[fromDay] || []).find((it) => it.id === itemId);
+        if (!item) return;
+        st.plans[fromDay] = st.plans[fromDay].filter((it) => it.id !== itemId);
+        (st.plans[toDay] = st.plans[toDay] || []).push(item);
+        st.daysAt[fromDay] = st.daysAt[toDay] = Date.now();
+      }),
     reorder_plan: async (day, order) =>
       edit((st) => {
         const items = st.plans[day];
