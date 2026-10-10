@@ -357,18 +357,22 @@ function showGreetScreen(onContinue) {
       <svg viewBox="0 0 24 24"><path d="M12 2c.5 4.5 2.5 6.5 7 7-4.5.5-6.5 2.5-7 7-.5-4.5-2.5-6.5-7-7 4.5-.5 6.5-2.5 7-7Z"/></svg>
     </div>
     <p class="greet-quote">«${escapeHtml(quote)}»</p>
-    <button type="button" class="greet-go">Начнём</button>
+    <div class="greet-actions">
+      <button type="button" class="greet-go" data-to="plan">К плану на сегодня</button>
+      <button type="button" class="greet-alt" data-to="goals">К целям</button>
+    </div>
   `;
   greetEl.classList.add("open");
   const onClick = (e) => {
-    if (e.target !== greetEl && !e.target.closest(".greet-go")) return;
+    const pick = e.target.closest("[data-to]");
+    if (e.target !== greetEl && !pick) return;
     greetEl.classList.remove("open");
     greetEl.removeEventListener("click", onClick);
     // while the greeting fades out it still swallows taps: a second tap on "Начнём" must not
     // fall through and open whichever goal now sits under the finger
     greetEl.classList.add("leaving");
     setTimeout(() => greetEl.classList.remove("leaving"), 450);
-    onContinue();
+    onContinue(pick ? pick.dataset.to : "plan");
   };
   greetEl.addEventListener("click", onClick);
 }

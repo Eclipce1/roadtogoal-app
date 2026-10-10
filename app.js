@@ -1037,8 +1037,8 @@ window.addEventListener("DOMContentLoaded", async () => {
   const data = await api.get_data();
   render(data, { scrollToCurrent: true });
   if (typeof Sync !== "undefined") Sync.start();
-  showGreetScreen(() => {
-    openGoals("goals");
+  showGreetScreen((section) => {
+    openGoals(section);
     // a phone that still holds only the demo goal has one job: get the real goals from the computer
     if (data.fresh && !PREVIEW && typeof Sync !== "undefined") Sync.openSetup();
     else afterStart(data);

@@ -3500,3 +3500,30 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
   .overlay { transition: opacity 0.14s ease, visibility 0s linear 0.14s; }
   .overlay.open { transition-delay: 0s; }
 }
+
+/* the greeting offers two ways in: today's plan (the usual one) or the goals */
+.greet-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: min(300px, 100%);
+  margin-top: 8px;
+  opacity: 0;
+  animation: greetRise 0.55s ease-out 0.95s forwards;
+}
+.greet-actions .greet-go { margin-top: 0; opacity: 1; animation: none; padding: 15px 24px; font-size: 16px; }
+.greet-alt {
+  border-radius: 999px;
+  padding: 13px 24px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  transition: background-color 0.2s, border-color 0.2s, transform 0.15s;
+}
+.greet-alt:hover { background: rgba(255, 255, 255, 0.07); border-color: rgba(255, 255, 255, 0.45); }
+.greet-alt:active { transform: scale(0.97); }
