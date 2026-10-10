@@ -61,14 +61,7 @@ function previewApi() {
       // before the first sync, it must not overwrite a real goal that happens to be number 1
       activeGoalId: 99999,
       goals: [
-        newGoal(99999, {
-          mainGoal: "Моя цель",
-          subGoals: [
-            { id: 1, title: "Первый шаг", reward: "🎯", done: false },
-            { id: 2, title: "Второй шаг", reward: "📘", done: false },
-            { id: 3, title: "Третий шаг", reward: "🏆", done: false },
-          ],
-        }),
+        newGoal(99999, { mainGoal: "Моя цель" }),
       ],
     });
   };
@@ -1175,8 +1168,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (typeof Sync !== "undefined") Sync.start();
   showGreetScreen((section) => {
     openGoals(section);
-    // a phone that still holds only the demo goal has one job: get the real goals from the computer
-    if (data.fresh && !PREVIEW && typeof Sync !== "undefined") Sync.openSetup();
-    else afterStart(data);
+    afterStart(data);
   });
 });

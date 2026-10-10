@@ -10,7 +10,6 @@
 // blobs/<hash>.txt, so the history of the main file stays small.
 
 const Sync = (() => {
-  const DEFAULT_REPO = "Eclipce1/roadtogoal-data";
   const GITHUB = "https://api.github.com";
   const FILE = "data.json";
   const PLAN_PAST_DAYS = 60; // same cutoff main.py applies
@@ -230,7 +229,7 @@ const Sync = (() => {
   async function call(method, path, body, accept, extraHeaders) {
     let res;
     try {
-      res = await fetch(`${cfg.apiBase || GITHUB}/repos/${cfg.repo || DEFAULT_REPO}/contents/${path}`, {
+      res = await fetch(`${cfg.apiBase || GITHUB}/repos/${cfg.repo}/contents/${path}`, {
         method,
         headers: {
           Authorization: `Bearer ${cfg.token}`,
@@ -458,6 +457,7 @@ const Sync = (() => {
       body = `
         <div class="remind-row"><span>Связать телефон и компьютер</span></div>
         <p class="remind-note">Цели хранятся в твоём приватном репозитории GitHub и подтягиваются на оба устройства. Вставь токен доступа — один раз на каждом устройстве.</p>
+        <input type="text" class="sync-repo" placeholder="Репозиторий: ваш-логин/roadtogoal-data" autocomplete="off" autocapitalize="off" spellcheck="false" />
         <input type="password" class="sync-token" placeholder="github_pat_…" autocomplete="off" autocapitalize="off" spellcheck="false" />
         <button type="button" class="sync-go" data-act="sync-connect">Подключить</button>
         <p class="remind-error sync-msg" hidden></p>`;
@@ -493,10 +493,12 @@ const Sync = (() => {
     if (!wrap) return;
     const open = wrap.classList.contains("open");
     const keep = wrap.querySelector(".sync-token") ? wrap.querySelector(".sync-token").value : "";
+    const keepRepo = wrap.querySelector(".sync-repo") ? wrap.querySelector(".sync-repo").value : "";
     wrap.outerHTML = controlHtml();
     const fresh = document.querySelector(".sync-wrap");
     if (open) fresh.classList.add("open");
     if (keep && fresh.querySelector(".sync-token")) fresh.querySelector(".sync-token").value = keep;
+    if (keepRepo && fresh.querySelector(".sync-repo")) fresh.querySelector(".sync-repo").value = keepRepo;
   }
 
   function showMsg(text) {
@@ -509,8 +511,11 @@ const Sync = (() => {
   async function connect() {
     const input = document.querySelector(".sync-wrap .sync-token");
     const token = input ? input.value.trim() : "";
+    const repoInput = document.querySelector(".sync-wrap .sync-repo");
+    const repo = repoInput ? repoInput.value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\.git$/, "") : "";
+    if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) return showMsg("Укажи репозиторий в виде «логин/название».");
     if (!token) return showMsg("Вставь токен.");
-    cfg = { token, repo: DEFAULT_REPO, baseSha: "", lastSyncAt: 0, ...(cfg.apiBase ? { apiBase: cfg.apiBase } : {}) };
+    cfg = { token, repo, baseSha: "", lastSyncAt: 0, ...(cfg.apiBase ? { apiBase: cfg.apiBase } : {}) };
     showMsg("");
     remoteCache = null;
     lastFp = "";
@@ -518,7 +523,7 @@ const Sync = (() => {
     // check the token before saving it: the repo's folder listing needs read access
     try {
       const res = await call("GET", "");
-      if (res.status === 404) throw new SyncError("Репозиторий roadtogoal-data не найден или у токена нет к нему доступа.");
+      if (res.status === 404) throw new SyncError(`Репозиторий ${cfg.repo} не найден или у токена нет к нему доступа.`);
       if (!res.ok) throw new SyncError(`GitHub ответил ошибкой ${res.status}`);
     } catch (e) {
       cfg = {};

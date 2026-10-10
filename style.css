@@ -3243,7 +3243,8 @@ body.local .remind-wrap { display: none; }
 body.local .remind-wrap.sync-wrap { display: block; }
 body.local .remind-wrap:not(.sync-wrap) { display: none; }
 
-.sync-token {
+.sync-token,
+.sync-repo {
   width: 100%;
   margin-top: 10px;
   padding: 10px 12px;
@@ -3255,7 +3256,8 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
   font-size: 13px;
   outline: none;
 }
-.sync-token:focus { border-color: rgba(255, 255, 255, 0.35); }
+.sync-token:focus,
+.sync-repo:focus { border-color: rgba(255, 255, 255, 0.35); }
 .sync-go,
 .sync-actions button {
   margin-top: 10px;
