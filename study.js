@@ -63,6 +63,37 @@ function studyFormHtml(s) {
     </div>`;
 }
 
+const STUDY_MAX_FILE = 8 * 1024 * 1024;
+
+function fileSizeText(n) {
+  if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1).replace(".", ",") + " МБ";
+  return Math.max(1, Math.round(n / 1024)) + " КБ";
+}
+
+function studyFilesHtml(t) {
+  const files = t.files || [];
+  return `
+    <div class="study-files">
+      ${files
+        .map(
+          (f) => `
+        <div class="study-file" data-fid="${f.id}">
+          <button type="button" class="study-file-open" data-act="study-file-open" title="Открыть">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 9.5l-5.6 5.6a3.2 3.2 0 0 1-4.5-4.5l6-6a2.1 2.1 0 0 1 3 3l-6 6a1 1 0 0 1-1.5-1.5l5.4-5.4"/></svg>
+            <span class="study-file-name">${escapeHtml(f.name)}</span>
+          </button>
+          <span class="study-file-size">${fileSizeText(f.size)}</span>
+          <button type="button" class="study-x" data-act="study-file-del" title="Убрать файл">✕</button>
+        </div>`
+        )
+        .join("")}
+      <label class="study-btn study-attach">+ Прикрепить файл
+        <input type="file" class="study-file-input" multiple hidden />
+      </label>
+      <p class="study-file-msg" hidden></p>
+    </div>`;
+}
+
 function studyDetailHtml(s, t) {
   const st = taskState(t);
   const buttons =
@@ -79,6 +110,7 @@ function studyDetailHtml(s, t) {
         <input type="date" class="wiz-input study-t-due" value="${t.due || ""}" />
       </label>
       <textarea class="wiz-input study-t-text" rows="4" placeholder="Текст задания">${escapeHtml(t.text || "")}</textarea>
+      ${studyFilesHtml(t)}
       <div class="study-actions">
         ${buttons}
         <button type="button" class="study-btn danger" data-act="study-del-task">Удалить</button>
@@ -311,4 +343,118 @@ goalsPanel.addEventListener("keydown", (e) => {
     e.preventDefault();
     e.target.blur();
   }
+});
+
+/* ---------- files ---------- */
+
+function studyFileMsg(text) {
+  const m = goalsPanel.querySelector(".study-file-msg");
+  if (!m) return;
+  m.textContent = text;
+  m.hidden = !text;
+}
+
+function readAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+
+// the same short fingerprint the sync uses for photos: 24 hex digits of SHA-256
+async function fileId(text) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+}
+
+async function studyAttach(input) {
+  const { sid, tid } = studyIds(input);
+  const files = [...input.files];
+  input.value = "";
+  let problem = "";
+  for (const file of files) {
+    if (file.size > STUDY_MAX_FILE) {
+      problem = `«${file.name}» больше 8 МБ — такой файл не прикрепить.`;
+      continue;
+    }
+    try {
+      let url = await readAsDataUrl(file);
+      // some phones report no type for a file; the data URL then claims "application/octet-stream" or nothing
+      if (file.type && !url.startsWith("data:" + file.type)) url = url.replace(/^data:[^;,]*/, "data:" + file.type);
+      const id = await fileId(url);
+      if (!(await api.put_file(id, url))) {
+        problem = "Не получилось сохранить файл на этом устройстве (не хватает места).";
+        continue;
+      }
+      await studyCall("add_task_file", sid, tid, { id, name: file.name, type: file.type, size: file.size });
+    } catch (e) {
+      problem = "Не получилось прочитать файл.";
+    }
+  }
+  studyRender();
+  if (problem) studyFileMsg(problem);
+}
+
+function saveBlob(dataUrl, name) {
+  const [head, b64] = dataUrl.split(",", 2);
+  const type = (head.match(/^data:([^;]*)/) || [])[1] || "application/octet-stream";
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([bytes], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.target = "_blank";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+async function studyOpenFile(f) {
+  studyFileMsg("");
+  try {
+    if (IN_DESKTOP) {
+      if (await api.open_file(f.id, f.name)) return;
+    } else {
+      const text = await api.get_file(f.id);
+      if (text) return saveBlob(text, f.name);
+    }
+    // not on this device yet: it was attached on the other one, so bring it over first
+    studyFileMsg("Загружаю файл…");
+    const text = typeof Sync !== "undefined" ? await Sync.fetchFile(f.id) : "";
+    if (!text) {
+      studyFileMsg("Файла нет на этом устройстве. Подождите синхронизацию на другом устройстве или подключите её здесь.");
+      return;
+    }
+    await api.put_file(f.id, text);
+    studyFileMsg("");
+    if (IN_DESKTOP) await api.open_file(f.id, f.name);
+    else saveBlob(text, f.name);
+  } catch (e) {
+    studyFileMsg("Не получилось открыть файл.");
+  }
+}
+
+goalsPanel.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]");
+  if (!el || !["study-file-open", "study-file-del"].includes(el.dataset.act)) return;
+  const { sid, tid } = studyIds(el);
+  const fid = el.closest(".study-file").dataset.fid;
+  const sub = studySubjects().find((x) => x.id === sid);
+  const task = sub && sub.tasks.find((x) => x.id === tid);
+  const file = task && (task.files || []).find((x) => x.id === fid);
+  if (!file) return;
+  if (el.dataset.act === "study-file-open") studyOpenFile(file);
+  else {
+    await studyCall("remove_task_file", sid, tid, fid);
+    studyRender();
+  }
+});
+
+goalsPanel.addEventListener("change", (e) => {
+  if (e.target.matches(".study-file-input")) studyAttach(e.target);
 });

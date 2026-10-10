@@ -288,9 +288,25 @@ const Sync = (() => {
     return (await res.json()).content.sha;
   }
 
+  // the ids of files attached to study tasks (their bytes are stored like photos, by id)
+  const taskFileIds = (store) =>
+    [...new Set((store.subjects || []).flatMap((s) => (s.tasks || []).flatMap((t) => (t.files || []).map((f) => f.id))))];
+
+  // a file attached on another device is fetched when it is opened, not on every sync
+  async function fetchFile(id) {
+    if (!cfg.token) return "";
+    try {
+      const res = await call("GET", `blobs/${id}.txt`, null, "application/vnd.github.raw+json");
+      return res.ok ? await res.text() : "";
+    } catch (e) {
+      return "";
+    }
+  }
+
   async function push(store, sha) {
     const { core, blobs } = await externalize(store);
-    if (blobs.size) {
+    const fileIds = taskFileIds(store);
+    if (blobs.size || fileIds.length) {
       const have = await listBlobs();
       for (const [key, src] of blobs) {
         if (have.has(key)) continue;
@@ -298,6 +314,16 @@ const Sync = (() => {
           await putFile(`blobs/${key}.txt`, src, null, "photo");
         } catch (e) {
           if (!(e instanceof Conflict)) throw e; // already there: fine
+        }
+      }
+      for (const id of fileIds) {
+        if (have.has(id)) continue;
+        const text = await api.get_file(id); // empty when this device never had the bytes
+        if (!text) continue;
+        try {
+          await putFile(`blobs/${id}.txt`, text, null, "file");
+        } catch (e) {
+          if (!(e instanceof Conflict)) throw e;
         }
       }
     }
@@ -569,5 +595,5 @@ const Sync = (() => {
     }, 350);
   }
 
-  return { start, touch, syncNow, openSetup, controlHtml, mergeStores, fingerprint };
+  return { start, touch, syncNow, openSetup, controlHtml, mergeStores, fingerprint, fetchFile };
 })();

@@ -107,6 +107,30 @@ function previewApi() {
     if (e.key === KEY && !dirty) cache = null;
   });
   // a copy that shares the (immutable) strings: photos are not duplicated byte by byte
+  const filesDb = (mode, fn) =>
+    new Promise((resolve, reject) => {
+      const open = indexedDB.open("roadtogoal_files", 1);
+      open.onupgradeneeded = () => open.result.createObjectStore("files");
+      open.onerror = () => reject(open.error);
+      open.onsuccess = () => {
+        const db = open.result;
+        const tx = db.transaction("files", mode);
+        const req = fn(tx.objectStore("files"));
+        tx.oncomplete = () => {
+          db.close();
+          resolve(req && req.result);
+        };
+        tx.onerror = tx.onabort = () => reject(tx.error);
+      };
+    });
+  // forget the stored bytes of files no task mentions any more (the cloud keeps its copy)
+  const dropUnusedFiles = (st) => {
+    const used = new Set(st.subjects.flatMap((s) => s.tasks.flatMap((t) => (t.files || []).map((f) => f.id))));
+    filesDb("readonly", (s) => s.getAllKeys())
+      .then((keys) => (keys || []).filter((k) => !used.has(k)))
+      .then((stale) => stale.length && filesDb("readwrite", (s) => stale.forEach((k) => s.delete(k))))
+      .catch(() => {});
+  };
   const newId = () => Math.random().toString(16).slice(2, 10).padEnd(8, "0");
   const copy = (x) =>
     Array.isArray(x)
@@ -247,6 +271,7 @@ function previewApi() {
         if (!st.subjects.some((x) => x.id === id)) return;
         st.subjects = st.subjects.filter((x) => x.id !== id);
         st.deletedSubjects[id] = Date.now();
+        dropUnusedFiles(st);
       }),
     add_task: async (subjectId, title, text = "", due = "") =>
       edit((st) => {
@@ -255,7 +280,7 @@ function previewApi() {
         if (!sub || !title) return;
         sub.tasks.push({
           id: newId(), title, text: String(text || "").slice(0, 20000),
-          due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : "", status: "new", doneAt: "",
+          due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : "", status: "new", doneAt: "", files: [],
         });
         sub.updatedAt = Date.now();
       }),
@@ -279,6 +304,46 @@ function previewApi() {
         if (!sub) return;
         sub.tasks = sub.tasks.filter((t) => t.id !== taskId);
         sub.updatedAt = Date.now();
+        dropUnusedFiles(st);
+      }),
+    // the bytes of a task's files live in IndexedDB (localStorage is far too small for them);
+    // the task keeps only {id, name, type, size}
+    put_file: async (id, dataUrl) => {
+      try {
+        await filesDb("readwrite", (s) => s.put(dataUrl, id));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    get_file: async (id) => {
+      try {
+        return (await filesDb("readonly", (s) => s.get(id))) || "";
+      } catch (e) {
+        return "";
+      }
+    },
+    add_task_file: async (subjectId, taskId, meta) =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === subjectId);
+        const task = sub && sub.tasks.find((t) => t.id === taskId);
+        if (!task || !meta || !/^[0-9a-f]{24}$/.test(String(meta.id))) return;
+        task.files = task.files || [];
+        if (task.files.length >= 12 || task.files.some((f) => f.id === meta.id)) return;
+        task.files.push({
+          id: meta.id, name: String(meta.name || "файл").slice(0, 200),
+          type: String(meta.type || "").slice(0, 100), size: Number(meta.size) || 0,
+        });
+        sub.updatedAt = Date.now();
+      }),
+    remove_task_file: async (subjectId, taskId, fileId) =>
+      edit((st) => {
+        const sub = st.subjects.find((x) => x.id === subjectId);
+        const task = sub && sub.tasks.find((t) => t.id === taskId);
+        if (!task) return;
+        task.files = (task.files || []).filter((f) => f.id !== fileId);
+        sub.updatedAt = Date.now();
+        dropUnusedFiles(st);
       }),
     set_reminder: async (enabled, time) =>
       quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
@@ -480,7 +545,7 @@ const apiReady = new Promise((resolve) => {
 // calls that only look at things, or touch this device's own settings, are no news to the other device
 const NOT_A_CHANGE = new Set([
   "get_data", "select_goal", "export_store", "import_store", "get_sync_config", "set_sync_config",
-  "set_reminder", "set_plan_reminder", "set_autostart",
+  "set_reminder", "set_plan_reminder", "set_autostart", "put_file", "get_file", "open_file",
 ]);
 
 const api = new Proxy({}, {
