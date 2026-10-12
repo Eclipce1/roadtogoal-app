@@ -38,7 +38,10 @@ function updateNavRail() {
   }
   // the study tab shows a red dot while a task is past its date
   const studyDot = document.getElementById("studyNavDot");
-  if (studyDot && lastData) studyDot.hidden = studyCounts().late === 0;
+  if (studyDot && lastData) {
+    const c = studyCounts();
+    studyDot.hidden = c.late + c.soon === 0;
+  }
 }
 
 navRail.addEventListener("click", (e) => {

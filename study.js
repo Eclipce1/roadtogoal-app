@@ -49,24 +49,69 @@ function dueText(t) {
   return `срок ${date} (через ${left} ${plural(left, "день", "дня", "дней")})`;
 }
 
+// how close an unfinished task is: past its date, due today, or due tomorrow
+function taskUrgency(t) {
+  if (t.status === "done" || !t.due) return "";
+  const left = daysBetween(todayISO(), t.due);
+  if (left < 0) return "late";
+  if (left === 0) return "today";
+  if (left === 1) return "tomorrow";
+  return "";
+}
+
+const URGENCY_TAG = { late: "Просрочено", today: "Сегодня", tomorrow: "Завтра" };
+const URGENCY_RANK = { late: 0, today: 1, tomorrow: 2 };
+
 function studyCounts() {
   let open = 0;
   let late = 0;
+  let soon = 0; // due today or tomorrow
   for (const s of studySubjects()) {
     for (const t of s.tasks) {
       const st = taskState(t);
       if (st === "late") late++;
       if (st !== "done") open++;
+      const u = taskUrgency(t);
+      if (u === "today" || u === "tomorrow") soon++;
     }
   }
-  return { open, late };
+  return { open, late, soon };
+}
+
+// a loud strip at the top: what is due so soon that it needs doing now
+function studyAlertHtml() {
+  const hot = [];
+  for (const s of studySubjects()) for (const t of s.tasks) {
+    const u = taskUrgency(t);
+    if (u) hot.push({ s, t, u });
+  }
+  if (!hot.length) return "";
+  hot.sort((a, b) => URGENCY_RANK[a.u] - URGENCY_RANK[b.u] || (a.t.due || "").localeCompare(b.t.due || ""));
+  const shown = hot.slice(0, 4);
+  const worst = hot[0].u;
+  return `
+    <div class="study-alert u-${worst}">
+      <div class="study-alert-title">Горит — пора готовиться</div>
+      ${shown
+        .map(
+          ({ s, t, u }) => `
+        <button type="button" class="study-alert-item" data-act="study-jump" data-sid="${s.id}" data-tid="${t.id}">
+          <span class="study-tag u-${u}">${URGENCY_TAG[u]}</span>
+          <span class="study-alert-text"><b>${escapeHtml(s.name)}</b> — ${escapeHtml(t.title)}</span>
+        </button>`
+        )
+        .join("")}
+      ${hot.length > shown.length ? `<div class="study-alert-more">и ещё ${hot.length - shown.length}</div>` : ""}
+    </div>`;
 }
 
 function studySquareHtml(s, t) {
   const st = taskState(t);
   const sel = studySel && studySel.sid === s.id && studySel.tid === t.id;
   const tip = `${t.title} · ${dueText(t)}`;
-  return `<button type="button" class="study-sq ${st}${sel ? " sel" : ""}" data-act="study-pick" data-tid="${t.id}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}"></button>`;
+  const u = taskUrgency(t);
+  const hot = u === "today" || u === "tomorrow" ? ` hot u-${u}` : "";
+  return `<button type="button" class="study-sq ${st}${hot}${sel ? " sel" : ""}" data-act="study-pick" data-tid="${t.id}" title="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}"></button>`;
 }
 
 function studyFormHtml(s) {
@@ -155,11 +200,14 @@ function studyShownTasks(s) {
 
 function studySubjectHtml(s) {
   const done = s.tasks.filter((t) => t.status === "done").length;
+  const hot = s.tasks.map(taskUrgency).filter(Boolean).sort((a, b) => URGENCY_RANK[a] - URGENCY_RANK[b]);
+  const badge = hot.length ? `<span class="study-tag u-${hot[0]}">${URGENCY_TAG[hot[0]]}${hot.length > 1 ? " · " + hot.length : ""}</span>` : "";
   const picked = studySel && studySel.sid === s.id ? s.tasks.find((t) => t.id === studySel.tid) : null;
   return `
     <section class="study-sub" data-sid="${s.id}">
       <div class="study-sub-head">
         <input class="study-name" value="${escapeHtml(s.name)}" maxlength="80" aria-label="Название предмета" />
+        ${badge}
         <span class="study-count">${done} из ${s.tasks.length}</span>
         <button type="button" class="study-x" data-act="study-del-subject" title="Удалить предмет">✕</button>
       </div>
@@ -207,17 +255,18 @@ function studyDeadlinesHtml() {
       const list = rows.filter(test).sort((a, b) => byDue(a.t, b.t) || a.s.name.localeCompare(b.s.name));
       if (!list.length) return "";
       return `
-        <div class="study-group ${key}">
+        <div class="study-group g-${key}">
           <div class="study-group-title">${title} <span>${list.length}</span></div>
           ${list
             .map(
               ({ s, t }) => `
-            <button type="button" class="study-row" data-act="study-jump" data-sid="${s.id}" data-tid="${t.id}">
+            <button type="button" class="study-row${taskUrgency(t) ? " hot u-" + taskUrgency(t) : ""}" data-act="study-jump" data-sid="${s.id}" data-tid="${t.id}">
               <i class="study-dot ${taskState(t)}"></i>
               <span class="study-row-main">
                 <span class="study-row-title">${escapeHtml(t.title)}</span>
                 <span class="study-row-sub">${escapeHtml(s.name)} · ${escapeHtml(dueText(t))}</span>
               </span>
+              ${taskUrgency(t) ? `<span class="study-tag u-${taskUrgency(t)}">${URGENCY_TAG[taskUrgency(t)]}</span>` : ""}
             </button>`
             )
             .join("")}
@@ -229,10 +278,10 @@ function studyDeadlinesHtml() {
 
 function studyMainHtml() {
   const subjects = studySubjects();
-  const { open, late } = studyCounts();
+  const { open, late, soon } = studyCounts();
   const sub = !subjects.length
     ? "Задания, лабораторные, практики"
-    : `${open} ${plural(open, "задание", "задания", "заданий")} впереди${late ? ` · ${late} просрочено` : ""}`;
+    : `${open} ${plural(open, "задание", "задания", "заданий")} впереди${late ? ` · ${late} просрочено` : ""}${soon ? ` · ${soon} горит` : ""}`;
   return `
     <div class="goals-top">
       <div>
@@ -244,6 +293,7 @@ function studyMainHtml() {
       </div>
     </div>
     <div class="goals-list study">
+      ${subjects.length ? studyAlertHtml() : ""}
       ${subjects.length ? studyBarHtml() : ""}
       ${studyView === "deadlines" && subjects.length ? studyDeadlinesHtml() : ""}
       ${

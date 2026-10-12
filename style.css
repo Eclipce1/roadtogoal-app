@@ -3647,7 +3647,7 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 .study-group { margin-bottom: 18px; }
 .study-group-title { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin: 0 4px 8px; }
 .study-group-title span { margin-left: 6px; color: var(--text-3); opacity: 0.7; }
-.study-group.late .study-group-title { color: #f87171; }
+.study-group.g-late .study-group-title { color: #f87171; }
 .study-row {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
   padding: 11px 12px; margin-bottom: 6px; border-radius: 12px; cursor: pointer;
@@ -3661,7 +3661,7 @@ body.local .remind-wrap:not(.sync-wrap) { display: none; }
 .study-row-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .study-row-title { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .study-row-sub { font-size: 12.5px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.study-group.done .study-row-title { color: var(--text-2); }
+.study-group.g-done .study-row-title { color: var(--text-2); }
 
 /* a plan item held over a calendar day: that day lights up */
 .cal-day.drop-target { outline: 2px solid var(--sky); outline-offset: -2px; background: rgba(125, 211, 252, 0.18); }
@@ -3688,3 +3688,28 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .auth-skip { margin-top: 14px; color: var(--text-3); text-decoration: underline; text-underline-offset: 3px; }
 .auth-email-line { word-break: break-all; }
 @media (max-width: 700px) { .auth-wrap .remind-pop { position: fixed; left: 12px; right: 12px; top: 120px; width: auto; } }
+
+/* study: what is due today or tomorrow is loud */
+.study-tag { flex-shrink: 0; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.study-tag.u-tomorrow { background: rgba(251, 191, 36, 0.16); color: #fbbf24; }
+.study-tag.u-today { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+.study-tag.u-late { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+.study-alert { margin-bottom: 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.45); background: linear-gradient(180deg, rgba(251, 191, 36, 0.12), rgba(251, 191, 36, 0.04)); }
+.study-alert.u-today { border-color: rgba(251, 146, 60, 0.6); background: linear-gradient(180deg, rgba(251, 146, 60, 0.16), rgba(251, 146, 60, 0.05)); }
+.study-alert.u-late { border-color: rgba(239, 68, 68, 0.6); background: linear-gradient(180deg, rgba(239, 68, 68, 0.16), rgba(239, 68, 68, 0.05)); }
+.study-alert-title { font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #fbbf24; margin-bottom: 8px; }
+.study-alert.u-today .study-alert-title { color: #fb923c; }
+.study-alert.u-late .study-alert-title { color: #f87171; }
+.study-alert-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 4px; border: none; background: transparent; color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; border-radius: 10px; }
+.study-alert-item:hover { background: rgba(255, 255, 255, 0.06); }
+.study-alert-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.study-alert-text b { font-weight: 600; }
+.study-alert-more { padding: 4px 4px 0; font-size: 13px; color: var(--text-3); }
+
+.study-sq.hot.u-tomorrow { box-shadow: 0 0 0 2px #000, 0 0 0 4px #fbbf24; }
+.study-sq.hot.u-today { box-shadow: 0 0 0 2px #000, 0 0 0 4px #fb923c; }
+.study-row.hot.u-tomorrow { border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.08); box-shadow: inset 4px 0 0 #fbbf24; }
+.study-row.hot.u-today { border-color: rgba(251, 146, 60, 0.65); background: rgba(251, 146, 60, 0.11); box-shadow: inset 4px 0 0 #fb923c; }
+.study-row.hot.u-late { border-color: rgba(239, 68, 68, 0.55); background: rgba(239, 68, 68, 0.08); box-shadow: inset 4px 0 0 #ef4444; }
+.study-row .study-tag { margin-left: auto; }
