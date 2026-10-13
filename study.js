@@ -430,6 +430,8 @@ goalsPanel.addEventListener("click", async (e) => {
     studyRender();
   } else if (act === "study-status") {
     await studyCall("update_task", sid, tid, { status: el.dataset.to });
+    // a finished task folds away, so the card doesn't keep taking up the screen
+    if (el.dataset.to === "done") studySel = null;
     studyRender();
   } else if (act === "study-del-task") {
     const sub = studySubjects().find((s) => s.id === sid);
