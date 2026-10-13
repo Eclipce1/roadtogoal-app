@@ -359,6 +359,7 @@ function showGreetScreen(onContinue) {
     <p class="greet-quote">«${escapeHtml(quote)}»</p>
     <div class="greet-actions">
       <button type="button" class="greet-go" data-to="plan">К плану на сегодня</button>
+      <button type="button" class="greet-alt" data-to="study">К учёбе</button>
       <button type="button" class="greet-alt" data-to="goals">К целям</button>
     </div>
   `;
