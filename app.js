@@ -273,7 +273,7 @@ function previewApi() {
         if (!sub || !title) return;
         sub.tasks.push({
           id: newId(), title, text: String(text || "").slice(0, 20000),
-          due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : "", status: "new", doneAt: "", files: [],
+          due: /^20\d\d-\d\d-\d\d$/.test(due) ? due : "", status: "new", doneAt: "", files: [],
         });
         sub.updatedAt = Date.now();
       }),
@@ -284,7 +284,7 @@ function previewApi() {
         if (!task || !patch) return;
         if ("title" in patch && String(patch.title).trim()) task.title = String(patch.title).trim().slice(0, 200);
         if ("text" in patch) task.text = String(patch.text).slice(0, 20000);
-        if ("due" in patch) task.due = /^\d{4}-\d{2}-\d{2}$/.test(patch.due) ? patch.due : "";
+        if ("due" in patch) task.due = /^20\d\d-\d\d-\d\d$/.test(patch.due) ? patch.due : "";
         if (["new", "doing", "done"].includes(patch.status)) {
           task.status = patch.status;
           task.doneAt = patch.status === "done" ? today() : "";

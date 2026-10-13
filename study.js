@@ -27,8 +27,14 @@ function saveStudyPrefs() {
 
 const STUDY_STATE_NAME = { new: "Новое", doing: "В работе", done: "Сделано", late: "Просрочено" };
 
+// only dates in the 2000s are real: while a year is being typed the field passes through
+// "0002", "0020", … and one of those must never be taken for a deadline
+const validDue = (due) => (/^20\d\d-\d\d-\d\d$/.test(due || "") ? due : "");
+
 function studySubjects() {
-  return (lastData && lastData.subjects) || [];
+  const subjects = (lastData && lastData.subjects) || [];
+  for (const s of subjects) for (const t of s.tasks) if (t.due && !validDue(t.due)) t.due = "";
+  return subjects;
 }
 
 // "late" is not stored: it is simply an unfinished task whose date has passed
@@ -487,14 +493,21 @@ goalsPanel.addEventListener("change", async (e) => {
     const { sid, tid } = studyIds(t);
     await studyCall("update_task", sid, tid, { text: t.value });
   } else if (t.matches(".study-t-due")) {
+    // fires for every date that is complete so far (day 2, then day 28, year 0002, …): keep only
+    // a real one, and don't redraw under the user's fingers — that happens when the field is left
     const { sid, tid } = studyIds(t);
+    if (t.value && !validDue(t.value)) return;
     await studyCall("update_task", sid, tid, { due: t.value });
-    studyRender();
+    t.dataset.dirty = "1";
   }
 });
 
 goalsPanel.addEventListener("input", (e) => {
   if (e.target.matches(".study-t-text, .study-f-text")) studyFit();
+});
+
+goalsPanel.addEventListener("focusout", (e) => {
+  if (e.target.matches(".study-t-due") && e.target.dataset.dirty) studyRender();
 });
 
 goalsPanel.addEventListener("keydown", (e) => {
