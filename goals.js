@@ -6,7 +6,7 @@ const goalsPanel = goalsEl.querySelector(".goals-panel");
 const expandedGoals = new Set();
 // the constellation is too small to read on a phone; there the list is the way in
 let goalsMode = window.matchMedia("(max-width: 700px)").matches ? "list" : "graph";
-let goalsSection = "goals"; // "goals" | "plan" | "study" — the nav-rail tabs
+let goalsSection = "goals"; // "day" | "goals" | "plan" | "study" — the nav-rail tabs
 
 // section is optional: pass it to jump straight to a tab, or omit to keep the current one
 function openGoals(section) {
@@ -202,7 +202,7 @@ function renderGoals() {
   const scrollTop = oldScroller ? oldScroller.scrollTop : 0;
 
   goalsPanel.innerHTML =
-    goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsMainHtml();
+    goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsSection === "day" ? dayMainHtml() : goalsMainHtml();
   if (goalsSection === "study") studyFit();
   if (goalsSection === "goals" && goalsMode === "graph") Graph.mount(goalsPanel.querySelector(".graph"), lastData);
   else Graph.stop();

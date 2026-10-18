@@ -3713,3 +3713,30 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .study-row.hot.u-today { border-color: rgba(251, 146, 60, 0.65); background: rgba(251, 146, 60, 0.11); box-shadow: inset 4px 0 0 #fb923c; }
 .study-row.hot.u-late { border-color: rgba(239, 68, 68, 0.55); background: rgba(239, 68, 68, 0.08); box-shadow: inset 4px 0 0 #ef4444; }
 .study-row .study-tag { margin-left: auto; }
+
+/* ---------- "Сегодня" ---------- */
+.greet-row { display: flex; gap: 8px; }
+.greet-alt.sm { flex: 1; padding: 11px 8px; font-size: 14px; }
+.my-day { padding-top: 10px; }
+.my-line { font-size: 16px; color: var(--text-2); margin: 4px 2px 16px; line-height: 1.45; }
+.my-items { display: flex; flex-direction: column; gap: 10px; }
+.my-item { display: flex; align-items: center; gap: 14px; padding: 14px 14px 14px 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
+.my-check { flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4); background: transparent; cursor: pointer; padding: 0; transition: background-color 0.15s, border-color 0.15s, transform 0.12s; }
+.my-check:hover { border-color: var(--green); background: rgba(74, 222, 128, 0.15); }
+.my-check:active { transform: scale(0.9); }
+.my-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; background: none; border: none; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
+.my-title { font-size: 17px; line-height: 1.3; overflow-wrap: anywhere; }
+.my-sub { font-size: 13px; color: var(--text-3); }
+.my-more { margin: 10px 2px 0; background: none; border: none; color: var(--text-2); font: inherit; font-size: 14px; cursor: pointer; padding: 6px 0; }
+.my-more:hover { color: var(--text); }
+.my-checkin { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 18px; padding: 16px 20px; border-radius: 999px; font: inherit; font-size: 16px; font-weight: 600; cursor: pointer; background: var(--white); color: #000; border: none; }
+.my-checkin span { font-size: 13px; font-weight: 500; opacity: 0.65; }
+.my-checkin.on { background: transparent; color: var(--text); border: 1px solid rgba(255, 255, 255, 0.3); }
+.my-checkin.on span { color: var(--green); opacity: 1; }
+.my-wins { margin: 20px 2px 0; font-size: 14px; line-height: 1.5; color: var(--text-3); }
+.my-card { margin: 0 0 16px; padding: 18px; border-radius: 18px; background: rgba(125, 211, 252, 0.07); border: 1px solid rgba(125, 211, 252, 0.28); }
+.my-card p { margin: 8px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--text-2); }
+.my-card-title { font-size: 16px; font-weight: 600; }
+.my-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.my-note { font-size: 12.5px !important; color: var(--text-3) !important; }
+.my-return + .my-line { margin-top: 0; }

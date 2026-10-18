@@ -358,9 +358,12 @@ function showGreetScreen(onContinue) {
     </div>
     <p class="greet-quote">«${escapeHtml(quote)}»</p>
     <div class="greet-actions">
-      <button type="button" class="greet-go" data-to="plan">К плану на сегодня</button>
-      <button type="button" class="greet-alt" data-to="study">К учёбе</button>
-      <button type="button" class="greet-alt" data-to="goals">К целям</button>
+      <button type="button" class="greet-go" data-to="day">Мой день</button>
+      <div class="greet-row">
+        <button type="button" class="greet-alt sm" data-to="plan">План</button>
+        <button type="button" class="greet-alt sm" data-to="study">Учёба</button>
+        <button type="button" class="greet-alt sm" data-to="goals">Цели</button>
+      </div>
     </div>
   `;
   greetEl.classList.add("open");
@@ -373,7 +376,7 @@ function showGreetScreen(onContinue) {
     // fall through and open whichever goal now sits under the finger
     greetEl.classList.add("leaving");
     setTimeout(() => greetEl.classList.remove("leaving"), 450);
-    onContinue(pick ? pick.dataset.to : "plan");
+    onContinue(pick ? pick.dataset.to : "day");
   };
   greetEl.addEventListener("click", onClick);
 }

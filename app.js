@@ -484,6 +484,17 @@ function previewApi() {
         (st.plans[toDay] = st.plans[toDay] || []).push(item);
         st.daysAt[fromDay] = st.daysAt[toDay] = Date.now();
       }),
+    clear_overdue_plan: async () =>
+      edit((st) => {
+        const t = today();
+        Object.keys(st.plans).forEach((day) => {
+          if (day >= t) return;
+          const kept = st.plans[day].filter((it) => it.done);
+          if (kept.length === st.plans[day].length) return;
+          st.plans[day] = kept;
+          st.daysAt[day] = Date.now();
+        });
+      }),
     reorder_plan: async (day, order) =>
       edit((st) => {
         const items = st.plans[day];
