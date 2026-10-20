@@ -3843,3 +3843,29 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .agenda-side { opacity: 0.55; }
 .agenda-side:hover { opacity: 0.9; }
 .agenda-cols { gap: 34px; }
+
+/* a wide screen: more air, bigger type, so the planning page doesn't huddle in the middle */
+@media (min-width: 1200px) {
+  .agenda-body { max-width: 1280px; padding: 40px 48px 64px; }
+  .wk-strip { margin-bottom: 34px; gap: 10px; }
+  .wk-days { gap: 10px; }
+  .wk-day { padding: 10px 4px 9px; border-radius: 16px; }
+  .wk-num { font-size: 21px; }
+  .wk-name, .wk-sub { font-size: 12px; }
+  .agenda-cols { grid-template-columns: minmax(0, 1fr) 340px; gap: 72px; }
+  .agenda-main > .agenda-pane { padding: 32px 38px 36px; }
+  .agenda-pane .agenda-day-name b { font-size: 28px; }
+  .agenda-pane .agenda-text { font-size: 20px; }
+  .agenda-pane .agenda-item { padding: 15px 12px; }
+  .agenda-pane .agenda-check { width: 30px; height: 30px; }
+  .agenda-pane .agenda-empty { font-size: 16px; padding: 18px 6px 26px; }
+  .feed-group { margin-top: 32px; }
+  .feed-title { font-size: 12px; margin-bottom: 10px; }
+  .feed-row { padding: 11px 8px; gap: 14px; }
+  .feed-check { width: 22px; height: 22px; }
+  .feed-text { font-size: 16.5px; }
+  .feed-tag { font-size: 13px; }
+  .side-line { font-size: 14.5px; margin-bottom: 14px; }
+  .cal-fold summary, .agenda-stats summary { font-size: 14.5px; }
+  .agenda-stats { margin-top: 38px; }
+}
