@@ -300,13 +300,12 @@ function agendaDayPanelHtml() {
         agendaDay < today
           ? "На этот день ничего не было записано."
           : agendaDay === today
-          ? "На сегодня пока пусто. Вечером удобно набросать план на завтра — с утра проще начать."
+          ? "На сегодня пока пусто."
           : "Пока пусто. Запиши, что нужно сделать в этот день — и не придётся держать это в голове."
       }</div>`;
 
   return `
     <div class="agenda-pane">
-      ${agendaOverdueHtml()}
       <div class="agenda-day-head">
         <div class="agenda-day-name">
           <b>${upperFirst(weekdayLong(agendaDay))}, ${fmtDate(agendaDay, { day: "numeric", month: "long" })}</b>
@@ -332,7 +331,99 @@ function agendaDayPanelHtml() {
           <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M4.5 9.5 10 4l5.5 5.5"/></svg>
         </button>
       </div>
-      ${agendaChartHtml()}
+    </div>`;
+}
+
+/* ---------- the week as one strip, the other days as a short feed, the rest kept quiet ---------- */
+
+function weekStart(iso) {
+  const lead = (new Date(iso + "T00:00:00").getDay() + 6) % 7; // Monday-first
+  return shiftISO(iso, -lead);
+}
+
+function weekOfMonth(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+  const total = new Date(y, m, 0).getDate();
+  return { n: Math.ceil((d + lead) / 7), of: Math.ceil((total + lead) / 7) };
+}
+
+function agendaWeekHtml() {
+  const start = weekStart(agendaDay);
+  const today = todayISO();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const iso = shiftISO(start, i);
+    const items = agendaItems(iso);
+    const done = items.filter((it) => it.done).length;
+    const cls = ["wk-day", iso === agendaDay ? "on" : "", iso === today ? "is-today" : "", agendaMark(iso) !== undefined ? "marked" : ""].filter(Boolean).join(" ");
+    days.push(`
+      <button type="button" class="${cls}" data-act="agenda-day" data-day="${iso}">
+        <span class="wk-name">${CAL_WEEKDAYS[i]}</span>
+        <span class="wk-num">${+iso.slice(8)}</span>
+        <span class="wk-sub">${items.length ? `${done}/${items.length}` : "—"}</span>
+      </button>`);
+  }
+  return `
+    <div class="wk-strip">
+      <button type="button" class="wk-nav" data-act="agenda-week" data-delta="-1" title="Прошлая неделя">‹</button>
+      <div class="wk-days">${days.join("")}</div>
+      <button type="button" class="wk-nav" data-act="agenda-week" data-delta="1" title="Следующая неделя">›</button>
+    </div>`;
+}
+
+function feedRowHtml(day, it, tag, tagClass) {
+  return `
+    <div class="feed-row${it.done ? " done" : ""}">
+      <button type="button" class="feed-check" data-act="feed-toggle" data-day="${day}" data-id="${it.id}" title="${it.done ? "Снять отметку" : "Готово"}">${it.done ? "✓" : ""}</button>
+      <button type="button" class="feed-text" data-act="agenda-day" data-day="${day}" title="Открыть этот день">${escapeHtml(it.text)}</button>
+      ${tag ? `<span class="feed-tag ${tagClass || ""}">${tag}</span>` : ""}
+    </div>`;
+}
+
+// what is waiting outside the open day: debts first, then tomorrow, then what is further ahead
+function agendaFeedHtml() {
+  const today = todayISO();
+  const tomorrow = shiftISO(today, 1);
+  const dateTag = (d) => fmtDate(d, { day: "numeric", month: "short" });
+  const groups = [];
+
+  const late = [];
+  overdueInfo().days.forEach((d) => {
+    if (d !== agendaDay) agendaItems(d).filter((it) => !it.done).forEach((it) => late.push(feedRowHtml(d, it, dateTag(d), "late")));
+  });
+  if (late.length) groups.push(["Просрочено", late]);
+
+  if (agendaDay !== tomorrow) {
+    const rows = agendaItems(tomorrow).map((it) => feedRowHtml(tomorrow, it, "", ""));
+    if (rows.length) groups.push(["Завтра", rows]);
+  }
+
+  const later = [];
+  for (let i = 2; i <= 14 && later.length < 6; i++) {
+    const d = shiftISO(today, i);
+    if (d === agendaDay) continue;
+    agendaItems(d).forEach((it) => later.length < 6 && later.push(feedRowHtml(d, it, dateTag(d), "")));
+  }
+  if (later.length) groups.push(["Позже", later]);
+
+  return groups
+    .map(([title, rows]) => `<div class="feed-group${title === "Просрочено" ? " late" : ""}"><div class="feed-title">${title}</div>${rows.join("")}</div>`)
+    .join("");
+}
+
+function agendaSideHtml() {
+  const w = weekOfMonth(agendaDay);
+  const streak = lastData && lastData.mode === "steps" ? streakInfo(lastData.checkins).count : 0;
+  const month = MONTH_NAMES[+agendaMonth.slice(5, 7) - 1];
+  return `
+    <div class="agenda-side">
+      ${streak ? `<div class="side-line">Серия: ${streak} ${plural(streak, "день", "дня", "дней")}</div>` : ""}
+      <div class="side-line">${month} · неделя ${w.n} из ${w.of}</div>
+      <details class="cal-fold"${window.matchMedia("(min-width: 821px)").matches ? " open" : ""}>
+        <summary>Календарь</summary>
+        ${agendaCalendarHtml()}
+      </details>
     </div>`;
 }
 
@@ -371,12 +462,14 @@ function agendaMainHtml() {
       </div>
     </div>
     <div class="agenda-body">
+      ${agendaWeekHtml()}
       <div class="agenda-cols">
-        ${agendaDayPanelHtml()}
-        <div class="agenda-side">
-          ${agendaCalendarHtml()}
-          ${agendaTomorrowHtml()}
+        <div class="agenda-main">
+          ${agendaDayPanelHtml()}
+          ${agendaFeedHtml()}
+          <details class="agenda-stats"><summary>Статистика</summary>${agendaChartHtml()}</details>
         </div>
+        ${agendaSideHtml()}
       </div>
     </div>`;
 }
@@ -431,6 +524,11 @@ goalsPanel.addEventListener("click", async (e) => {
     submitAgendaItem();
   } else if (act === "agenda-day") {
     selectAgendaDay(el.dataset.day);
+  } else if (act === "agenda-week") {
+    selectAgendaDay(shiftISO(agendaDay, 7 * +el.dataset.delta));
+  } else if (act === "feed-toggle") {
+    lastData = await api.toggle_plan_item(el.dataset.day, +el.dataset.id);
+    renderGoals();
   } else if (act === "agenda-month") {
     agendaMonth = shiftMonth(agendaMonth, +el.dataset.delta);
     renderGoals();
@@ -532,7 +630,7 @@ goalsPanel.addEventListener("dragend", (e) => {
 
 goalsPanel.addEventListener("dragover", (e) => {
   if (dragItemId !== null) {
-    const spot = e.target.closest(".cal-day, .cal-nav");
+    const spot = e.target.closest(".cal-day, .cal-nav, .wk-day");
     if (spot) {
       e.preventDefault(); // makes the day a place the item can be dropped
       e.dataTransfer.dropEffect = "move";
@@ -569,7 +667,7 @@ async function moveAgendaItem(itemId, targetId, before) {
 }
 
 goalsPanel.addEventListener("drop", (e) => {
-  const day = e.target.closest(".cal-day");
+  const day = e.target.closest(".cal-day, .wk-day");
   if (day && dragItemId !== null) {
     e.preventDefault();
     const id = dragItemId;
@@ -595,7 +693,7 @@ goalsPanel.addEventListener("drop", (e) => {
 let calHover = null; // { key, timer }
 
 function hoverCalendar(spot) {
-  goalsPanel.querySelectorAll(".cal-day.drop-target, .cal-nav.drop-target").forEach((el) => {
+  goalsPanel.querySelectorAll(".cal-day.drop-target, .cal-nav.drop-target, .wk-day.drop-target").forEach((el) => {
     if (el !== spot) el.classList.remove("drop-target");
   });
   const nav = spot && spot.classList.contains("cal-nav") ? spot : null;
@@ -648,9 +746,9 @@ goalsPanel.addEventListener("pointermove", (e) => {
   if (!touchDrag || e.pointerId !== touchDrag.pointerId) return;
   clearDragMarks();
   const over = document.elementFromPoint(e.clientX, e.clientY);
-  const spot = over && over.closest(".cal-day, .cal-nav");
+  const spot = over && over.closest(".cal-day, .cal-nav, .wk-day");
   hoverCalendar(spot);
-  touchDrag.targetDay = spot && spot.classList.contains("cal-day") ? spot.dataset.day : null;
+  touchDrag.targetDay = spot && (spot.classList.contains("cal-day") || spot.classList.contains("wk-day")) ? spot.dataset.day : null;
   if (touchDrag.targetDay) {
     touchDrag.targetId = null;
     return;
