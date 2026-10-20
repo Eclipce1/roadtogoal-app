@@ -3749,3 +3749,23 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .fs-toggle.on { top: 14px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 0 16px; color: var(--text-2); border-color: rgba(255, 255, 255, 0.25); }
 .my-streak { align-self: flex-start; margin-top: 6px; padding: 8px 16px; border-radius: 999px; font-size: 14px; color: var(--text-2); border: 1px solid rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.08); white-space: nowrap; }
 .my-streak b { color: var(--green); font-size: 17px; margin-left: 4px; }
+
+/* the edge tab that opens the side menu: it has to be seen, so it is bigger, tinted and labelled */
+.nav-handle {
+  width: 32px;
+  height: 112px;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--sky);
+  background: rgba(125, 211, 252, 0.16);
+  border-color: rgba(125, 211, 252, 0.65);
+  box-shadow: 0 0 20px rgba(125, 211, 252, 0.28);
+}
+.nav-handle svg { width: 10px; height: 18px; }
+.nav-handle-label { writing-mode: vertical-rl; font-size: 11.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; }
+.nav-rail:hover .nav-handle,
+.nav-rail.open .nav-handle,
+.nav-rail.peek .nav-handle { color: #fff; background: rgba(125, 211, 252, 0.3); border-color: rgba(125, 211, 252, 0.9); }
+.nav-handle:hover { color: #fff !important; background: rgba(125, 211, 252, 0.34); }
+@media (max-width: 700px) { .nav-handle-label { display: none; } }
+@media (min-width: 701px) { .nav-rail { transform: translateX(-188px); } .nav-rail:hover, .nav-rail.open, .nav-rail.peek { transform: none; } }
