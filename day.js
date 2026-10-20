@@ -186,6 +186,7 @@ goalsPanel.addEventListener("click", async (e) => {
       openGoals("plan");
     } else {
       studyView = "subjects";
+      studyOpen = sid;
       studySel = { sid, tid };
       studyAdding = null;
       openGoals("study");

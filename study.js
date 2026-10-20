@@ -3,6 +3,7 @@
 let studySel = null; // { sid, tid } — the task whose card is open
 let studyAdding = null; // subject id whose "new task" form is open
 let studyNewSubject = false; // the "new subject" field at the top is open
+let studyOpen = null; // id of the subject whose page is open; null = the grid of subjects
 
 // how the page is looked at — kept on this device only
 const STUDY_PREFS_KEY = "roadtogoal_study_prefs";
@@ -282,12 +283,105 @@ function studyDeadlinesHtml() {
   return html || `<div class="study-empty"><p>Здесь пока пусто: все задания сделаны.</p></div>`;
 }
 
+function dueShort(t) {
+  if (!t.due) return "без срока";
+  const left = daysBetween(todayISO(), t.due);
+  if (left < 0) return `просрочено на ${-left} ${plural(-left, "день", "дня", "дней")}`;
+  if (left === 0) return "сегодня";
+  if (left === 1) return "завтра";
+  return "до " + new Date(t.due + "T00:00:00").toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+}
+
+// one square per subject: how far along it is, and what is due next
+function studyTileHtml(s) {
+  const total = s.tasks.length;
+  const done = s.tasks.filter((t) => t.status === "done").length;
+  const todo = s.tasks.filter((t) => t.status !== "done").sort(byDue);
+  const hot = todo.map(taskUrgency).filter(Boolean).sort((a, b) => URGENCY_RANK[a] - URGENCY_RANK[b])[0];
+  const next = todo[0];
+  const nextLine = !total
+    ? "заданий пока нет"
+    : !todo.length
+    ? "всё сдано ✓"
+    : `${escapeHtml(next.title)} · ${dueShort(next)}`;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return `
+    <button type="button" class="study-tile${hot ? " hot u-" + hot : ""}" data-act="study-open-subject" data-sid="${s.id}">
+      <span class="tile-top">
+        <span class="tile-name">${escapeHtml(s.name)}</span>
+        ${hot ? `<span class="study-tag u-${hot}">${URGENCY_TAG[hot]}</span>` : ""}
+      </span>
+      <span class="tile-count"><b>${done}</b> из ${total}<small>сделано</small></span>
+      <span class="tile-bar"><i style="width:${pct}%"></i></span>
+      <span class="tile-next${hot ? " u-" + hot : ""}">${nextLine}</span>
+    </button>`;
+}
+
+function studyTaskRowHtml(s, t) {
+  const st = taskState(t);
+  const u = taskUrgency(t);
+  const sel = studySel && studySel.sid === s.id && studySel.tid === t.id;
+  const tag = u ? `<span class="study-tag u-${u}">${URGENCY_TAG[u]}</span>` : st === "doing" ? `<span class="study-tag u-doing">В работе</span>` : "";
+  return `
+    <div class="study-task ${st}${sel ? " sel" : ""}">
+      <button type="button" class="study-tick ${st}" data-act="study-tick" data-tid="${t.id}" title="${st === "done" ? "Вернуть в работу" : "Отметить сделанным"}" aria-label="${st === "done" ? "Вернуть в работу" : "Отметить сделанным"}">${st === "done" ? "✓" : ""}</button>
+      <button type="button" class="study-task-main" data-act="study-pick" data-tid="${t.id}">
+        <span class="st-title">${escapeHtml(t.title)}</span>
+        <span class="st-sub">${escapeHtml(dueText(t))}${(t.files || []).length ? " · файлов: " + t.files.length : ""}</span>
+      </button>
+      ${tag}
+    </div>
+    ${sel ? studyDetailHtml(s, t) : ""}`;
+}
+
+// inside a subject: what is left to do on top, what is finished folded away below
+function studyPageHtml(s) {
+  const todo = s.tasks.filter((t) => t.status !== "done").sort(byDue);
+  const done = s.tasks.filter((t) => t.status === "done");
+  return `
+    <section class="study-sub study-page" data-sid="${s.id}">
+      <button type="button" class="study-back" data-act="study-back">← Все предметы</button>
+      <div class="study-sub-head">
+        <input class="study-name" value="${escapeHtml(s.name)}" maxlength="80" aria-label="Название предмета" />
+        <span class="study-count">${done.length} из ${s.tasks.length}</span>
+        <button type="button" class="study-x" data-act="study-del-subject" title="Удалить предмет">✕</button>
+      </div>
+      <button type="button" class="study-add-big" data-act="study-add">+ Новое задание</button>
+      ${studyAdding === s.id ? studyFormHtml(s) : ""}
+      <div class="study-sec-title">Нужно сделать · ${todo.length}</div>
+      ${todo.length ? todo.map((t) => studyTaskRowHtml(s, t)).join("") : `<div class="study-sec-empty">${s.tasks.length ? "Всё сделано. Можно отдохнуть." : "Заданий пока нет. Добавьте первое."}</div>`}
+      ${done.length ? `<details class="study-done-box"><summary>Сделано · ${done.length}</summary>${done.map((t) => studyTaskRowHtml(s, t)).join("")}</details>` : ""}
+    </section>`;
+}
+
 function studyMainHtml() {
   const subjects = studySubjects();
   const { open, late, soon } = studyCounts();
+  if (studyOpen && !subjects.some((x) => x.id === studyOpen)) studyOpen = null;
+  const page = studyOpen ? subjects.find((x) => x.id === studyOpen) : null;
   const sub = !subjects.length
     ? "Задания, лабораторные, практики"
     : `${open} ${plural(open, "задание", "задания", "заданий")} впереди${late ? ` · ${late} просрочено` : ""}${soon ? ` · ${soon} горит` : ""}`;
+
+  let body;
+  if (page) body = studyPageHtml(page);
+  else if (studyView === "deadlines" && subjects.length)
+    body = `<button type="button" class="study-back" data-act="study-view" data-to="subjects">← Все предметы</button>${studyDeadlinesHtml()}`;
+  else if (subjects.length)
+    body = `
+      ${studyAlertHtml()}
+      <div class="study-grid-tiles">
+        ${subjects.map(studyTileHtml).join("")}
+        <button type="button" class="study-tile add" data-act="study-new-subject">+ Предмет</button>
+      </div>
+      <button type="button" class="study-alllink" data-act="study-view" data-to="deadlines">Все сроки списком →</button>`;
+  else
+    body = `<div class="study-empty">
+        <p>Здесь будут ваши предметы.</p>
+        <p>Добавьте предмет (например, «Базы данных») и зайдите в него: там лежат его задания со сроками.</p>
+        <button type="button" class="study-btn primary" data-act="study-new-subject">+ Добавить предмет</button>
+      </div>`;
+
   return `
     <div class="goals-top">
       <div>
@@ -299,9 +393,6 @@ function studyMainHtml() {
       </div>
     </div>
     <div class="goals-list study">
-      ${subjects.length ? studyAlertHtml() : ""}
-      ${subjects.length ? studyBarHtml() : ""}
-      ${studyView === "deadlines" && subjects.length ? studyDeadlinesHtml() : ""}
       ${
         studyNewSubject
           ? `<div class="study-newsub">
@@ -311,19 +402,7 @@ function studyMainHtml() {
              </div>`
           : ""
       }
-      ${
-        studyView === "deadlines" && subjects.length
-          ? ""
-          : subjects.length
-          ? subjects.map(studySubjectHtml).join("")
-          : `<div class="study-empty">
-               <p>Здесь будут ваши предметы и задания.</p>
-               <p>Добавьте первый предмет, а в нём — задания со сроками. Каждое задание это квадратик: серый — новое, голубой — в работе, зелёный — сделано, красный — просрочено.</p>
-             </div>`
-      }
-      <div class="study-legend">
-        <span><i class="new"></i>новое</span><span><i class="doing"></i>в работе</span><span><i class="done"></i>сделано</span><span><i class="late"></i>просрочено</span>
-      </div>
+      ${body}
     </div>`;
 }
 
@@ -362,7 +441,10 @@ async function studyAddSubject() {
     return;
   }
   studyNewSubject = false;
+  const before = new Set(studySubjects().map((x) => x.id));
   await studyCall("add_subject", name);
+  const made = studySubjects().find((x) => !before.has(x.id));
+  if (made) studyOpen = made.id;
   studyRender();
 }
 
@@ -404,14 +486,40 @@ goalsPanel.addEventListener("click", async (e) => {
     studySortDue = !studySortDue;
     saveStudyPrefs();
     studyRender();
+  } else if (act === "study-open-subject") {
+    studyOpen = el.dataset.sid;
+    studySel = null;
+    studyAdding = null;
+    studyRender();
+    const body = goalsPanel.querySelector(".goals-list");
+    if (body) body.scrollTop = 0;
+  } else if (act === "study-back") {
+    studyOpen = null;
+    studySel = null;
+    studyAdding = null;
+    studyView = "subjects";
+    saveStudyPrefs();
+    studyRender();
+  } else if (act === "study-tick") {
+    const sub = studySubjects().find((x) => x.id === sid);
+    const task = sub && sub.tasks.find((x) => x.id === el.dataset.tid);
+    if (!task) return;
+    const finishing = task.status !== "done";
+    await studyCall("update_task", sid, el.dataset.tid, { status: finishing ? "done" : "doing" });
+    if (finishing) {
+      Sound.step();
+      if (studySel && studySel.tid === el.dataset.tid) studySel = null;
+    }
+    studyRender();
   } else if (act === "study-jump") {
     studyView = "subjects";
+    studyOpen = el.dataset.sid;
     studySel = { sid: el.dataset.sid, tid: el.dataset.tid };
     studyAdding = null;
     saveStudyPrefs();
     studyRender();
-    const card = goalsPanel.querySelector(`.study-sub[data-sid="${el.dataset.sid}"]`);
-    if (card) card.scrollIntoView({ block: "start" });
+    const card = goalsPanel.querySelector(".study-task.sel");
+    if (card) card.scrollIntoView({ block: "center" });
   } else if (act === "study-new-subject") {
     studyNewSubject = true;
     studyRender(".study-newsub-name");
@@ -463,6 +571,7 @@ goalsPanel.addEventListener("click", async (e) => {
     });
     if (!ok) return;
     if (studySel && studySel.sid === sid) studySel = null;
+    if (studyOpen === sid) studyOpen = null;
     await studyCall("delete_subject", sid);
     studyRender();
   }
