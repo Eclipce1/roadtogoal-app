@@ -420,8 +420,8 @@ function agendaSideHtml() {
     <div class="agenda-side">
       ${streak ? `<div class="side-line">Серия: ${streak} ${plural(streak, "день", "дня", "дней")}</div>` : ""}
       <div class="side-line">${month} · неделя ${w.n} из ${w.of}</div>
-      <details class="cal-fold"${window.matchMedia("(min-width: 821px)").matches ? " open" : ""}>
-        <summary>Календарь</summary>
+      <details class="cal-fold">
+        <summary>Календарь месяца</summary>
         ${agendaCalendarHtml()}
       </details>
     </div>`;

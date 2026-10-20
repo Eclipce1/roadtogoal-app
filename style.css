@@ -3828,3 +3828,18 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .cal-fold[open] summary::after, .agenda-stats[open] summary::after { content: " ▴"; }
 .cal-fold .cal-legend { display: none; }
 .agenda-stats { margin-top: 26px; }
+
+/* the eye should land on the day's list, not on the strip above it or the calendar beside it */
+.wk-strip { margin-bottom: 18px; opacity: 0.85; }
+.wk-day { padding: 5px 2px 4px; border-radius: 12px; background: transparent; }
+.wk-num { font-size: 15px; }
+.wk-name, .wk-sub { font-size: 10px; }
+.wk-day.on { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.35); }
+.wk-day.on .wk-name, .wk-day.on .wk-sub { color: var(--text-2); }
+.wk-day.on .wk-num { color: var(--text); }
+.agenda-main > .agenda-pane { padding: 22px 24px 24px; border-radius: 22px; background: rgba(255, 255, 255, 0.045); border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 0 40px rgba(255, 255, 255, 0.05); }
+.agenda-pane .agenda-day-name b { font-size: 24px; }
+.agenda-pane .agenda-text { font-size: 18px; }
+.agenda-side { opacity: 0.55; }
+.agenda-side:hover { opacity: 0.9; }
+.agenda-cols { gap: 34px; }
