@@ -204,12 +204,26 @@ function renderGoals() {
   goalsPanel.innerHTML =
     goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsSection === "day" ? dayMainHtml() : goalsMainHtml();
   if (goalsSection === "study") studyFit();
+  addSectionBar();
   if (goalsSection === "goals" && goalsMode === "graph") Graph.mount(goalsPanel.querySelector(".graph"), lastData);
   else Graph.stop();
   updateNavRail();
 
   const newScroller = goalsPanel.querySelector(".an-body, .agenda-body, .goals-list");
   if (newScroller) newScroller.scrollTop = scrollTop;
+}
+
+// the name of the tab you are in, centred and plain, so it is always clear where you are
+function addSectionBar() {
+  goalsPanel.classList.remove("has-sec-bar");
+  const title = goalsPanel.querySelector(".goals-title");
+  if (!title) return;
+  const sub = goalsPanel.querySelector(".goals-sub");
+  const bar = document.createElement("div");
+  bar.className = "sec-bar";
+  bar.innerHTML = `<div class="sec-name">${escapeHtml(title.textContent)}</div>${sub ? `<div class="sec-sub">${escapeHtml(sub.textContent)}</div>` : ""}`;
+  goalsPanel.prepend(bar);
+  goalsPanel.classList.add("has-sec-bar");
 }
 
 function reminderControl() {

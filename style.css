@@ -3869,3 +3869,13 @@ body.local .remind-wrap.auth-wrap { display: block; }
   .cal-fold summary, .agenda-stats summary { font-size: 14.5px; }
   .agenda-stats { margin-top: 38px; }
 }
+
+/* ---------- the tab's name, centred ---------- */
+.sec-bar { text-align: center; padding: 20px 24px 4px; flex-shrink: 0; }
+.sec-name { display: inline-block; font-size: 24px; font-weight: 600; letter-spacing: -0.01em; padding-bottom: 8px; position: relative; }
+.sec-name::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 34px; height: 3px; margin-left: -17px; border-radius: 3px; background: var(--sky); box-shadow: 0 0 12px rgba(125, 211, 252, 0.5); }
+.sec-sub { margin-top: 6px; font-size: 13.5px; color: var(--text-3); }
+.goals-panel.has-sec-bar .goals-title, .goals-panel.has-sec-bar .goals-sub { display: none; }
+.goals-panel.has-sec-bar .goals-top:not(:has(.goals-tools, .my-streak)) { display: none; }
+.goals-panel.has-sec-bar .goals-top { padding-top: 6px; padding-bottom: 6px; justify-content: flex-end; }
+@media (min-width: 1200px) { .sec-name { font-size: 28px; } .sec-sub { font-size: 15px; } .sec-bar { padding-top: 26px; } }
