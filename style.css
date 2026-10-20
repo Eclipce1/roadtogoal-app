@@ -3743,8 +3743,9 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .my-empty { padding: 18px 4px; font-size: 17px; color: var(--text-2); }
 .my-clear { display: block; margin-top: 22px; color: var(--text-3); font-size: 13px; }
 
-/* opened over the whole screen at start-up */
-.fs-exit { position: fixed; top: 14px; right: 14px; z-index: 300; padding: 9px 16px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text-2); background: rgba(20, 20, 22, 0.85); border: 1px solid rgba(255, 255, 255, 0.2); }
-.fs-exit:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.45); }
+/* full screen on / off, always within reach on the computer */
+.fs-toggle { position: fixed; right: 14px; bottom: 14px; z-index: 300; display: flex; align-items: center; gap: 8px; height: 38px; min-width: 38px; padding: 0 11px; justify-content: center; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; color: var(--text-3); background: rgba(20, 20, 22, 0.8); border: 1px solid rgba(255, 255, 255, 0.14); }
+.fs-toggle:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.4); }
+.fs-toggle.on { top: 14px; bottom: auto; left: 50%; right: auto; transform: translateX(-50%); padding: 0 16px; color: var(--text-2); border-color: rgba(255, 255, 255, 0.25); }
 .my-streak { align-self: flex-start; margin-top: 6px; padding: 8px 16px; border-radius: 999px; font-size: 14px; color: var(--text-2); border: 1px solid rgba(74, 222, 128, 0.4); background: rgba(74, 222, 128, 0.08); white-space: nowrap; }
 .my-streak b { color: var(--green); font-size: 17px; margin-left: 4px; }

@@ -1172,17 +1172,37 @@ new ResizeObserver(() => {
   }
 }).observe(roadWrap);
 
-function showFullscreenExit() {
+// A button that is always there on the computer: full screen on, full screen off.
+// F11 does the same, and Esc leaves full screen when nothing else is open.
+function setupFullscreenToggle(startFull) {
+  let full = startFull;
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "fs-exit";
-  btn.textContent = "Свернуть в окно";
-  btn.addEventListener("click", async () => {
+  btn.className = "fs-toggle";
+  const paint = () => {
+    btn.classList.toggle("on", full);
+    btn.title = full ? "Свернуть в окно (Esc)" : "На весь экран (F11)";
+    btn.innerHTML = full
+      ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v4H3M13 3v4h4M7 17v-4H3M13 17v-4h4"/></svg><span>Свернуть в окно</span>'
+      : '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M17 7V3h-4M3 13v4h4M17 13v4h-4"/></svg>';
+  };
+  const toggle = async () => {
     try {
-      await api.exit_fullscreen();
+      const state = await api.toggle_fullscreen();
+      full = !!(state && state.fullscreen);
     } catch (e) {}
-    btn.remove();
+    paint();
+  };
+  btn.addEventListener("click", toggle);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "F11") {
+      e.preventDefault();
+      toggle();
+    } else if (e.key === "Escape" && full && !document.querySelector(".overlay.open:not(#greetScreen)") && !document.querySelector(".remind-wrap.open")) {
+      toggle();
+    }
   });
+  paint();
   document.body.appendChild(btn);
 }
 
@@ -1195,7 +1215,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   if (IN_DESKTOP && !PREVIEW) {
     try {
       const launch = await api.get_launch();
-      if (launch && launch.fullscreen) showFullscreenExit();
+      setupFullscreenToggle(!!(launch && launch.fullscreen));
     } catch (e) {}
   }
   // with a server configured, a visitor first signs in (or chooses to go on without an account)
