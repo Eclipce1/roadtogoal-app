@@ -3928,3 +3928,42 @@ body.local .remind-wrap.auth-wrap { display: block; }
 @media (max-width: 700px) { .study-grid-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .study-tile { min-height: 170px; padding: 16px; } .tile-name { font-size: 17px; } }
 .tile-top { flex-direction: column; align-items: flex-start; gap: 8px; }
 .tile-name { overflow-wrap: break-word; font-size: 19px; }
+
+/* ---------- every section has its own colour, so a glance tells which one it is ---------- */
+:root {
+  --c-day: #fbbf24; --c-day-rgb: 251, 191, 36;       /* Сегодня — sun yellow */
+  --c-road: #7dd3fc; --c-road-rgb: 125, 211, 252;    /* Дорожка — sky */
+  --c-goals: #a78bfa; --c-goals-rgb: 167, 139, 250;  /* Цели — violet */
+  --c-plan: #2dd4bf; --c-plan-rgb: 45, 212, 191;     /* Планирование — teal */
+  --c-study: #f472b6; --c-study-rgb: 244, 114, 182;  /* Учёба — pink */
+}
+
+/* the greeting */
+.greet-go[data-to="day"] { background: var(--c-day); color: #241a00; box-shadow: 0 0 26px rgba(var(--c-day-rgb), 0.35); }
+.greet-go[data-to="day"]:hover { box-shadow: 0 0 36px rgba(var(--c-day-rgb), 0.6); }
+.greet-alt[data-to="plan"] { color: var(--c-plan); border-color: rgba(var(--c-plan-rgb), 0.6); background: rgba(var(--c-plan-rgb), 0.1); }
+.greet-alt[data-to="study"] { color: var(--c-study); border-color: rgba(var(--c-study-rgb), 0.6); background: rgba(var(--c-study-rgb), 0.1); }
+.greet-alt[data-to="goals"] { color: var(--c-goals); border-color: rgba(var(--c-goals-rgb), 0.6); background: rgba(var(--c-goals-rgb), 0.1); }
+.greet-alt[data-to="plan"]:hover { background: rgba(var(--c-plan-rgb), 0.2); border-color: var(--c-plan); }
+.greet-alt[data-to="study"]:hover { background: rgba(var(--c-study-rgb), 0.2); border-color: var(--c-study); }
+.greet-alt[data-to="goals"]:hover { background: rgba(var(--c-goals-rgb), 0.2); border-color: var(--c-goals); }
+
+/* the menu / tab bar */
+.goals-nav-btn[data-nav="day"] svg { color: var(--c-day); }
+.goals-nav-btn[data-nav="road"] svg { color: var(--c-road); }
+.goals-nav-btn[data-nav="goals"] svg { color: var(--c-goals); }
+.goals-nav-btn[data-nav="plan"] svg { color: var(--c-plan); }
+.goals-nav-btn[data-nav="study"] svg { color: var(--c-study); }
+.goals-nav-btn[data-nav="day"].on { background: rgba(var(--c-day-rgb), 0.16); color: var(--c-day); }
+.goals-nav-btn[data-nav="road"].on { background: rgba(var(--c-road-rgb), 0.16); color: var(--c-road); }
+.goals-nav-btn[data-nav="goals"].on { background: rgba(var(--c-goals-rgb), 0.16); color: var(--c-goals); }
+.goals-nav-btn[data-nav="plan"].on { background: rgba(var(--c-plan-rgb), 0.16); color: var(--c-plan); }
+.goals-nav-btn[data-nav="study"].on { background: rgba(var(--c-study-rgb), 0.16); color: var(--c-study); }
+.goals-nav-btn.on svg { opacity: 1; }
+
+/* the name of the tab */
+.sec-bar[data-sec="day"] { --sec: var(--c-day); --sec-rgb: var(--c-day-rgb); }
+.sec-bar[data-sec="goals"] { --sec: var(--c-goals); --sec-rgb: var(--c-goals-rgb); }
+.sec-bar[data-sec="plan"] { --sec: var(--c-plan); --sec-rgb: var(--c-plan-rgb); }
+.sec-bar[data-sec="study"] { --sec: var(--c-study); --sec-rgb: var(--c-study-rgb); }
+.sec-name::after { background: var(--sec, var(--sky)); box-shadow: 0 0 12px rgba(var(--sec-rgb, 125, 211, 252), 0.55); }

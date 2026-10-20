@@ -221,6 +221,7 @@ function addSectionBar() {
   const sub = goalsPanel.querySelector(".goals-sub");
   const bar = document.createElement("div");
   bar.className = "sec-bar";
+  bar.dataset.sec = goalsSection; // each tab has its own colour
   bar.innerHTML = `<div class="sec-name">${escapeHtml(title.textContent)}</div>${sub ? `<div class="sec-sub">${escapeHtml(sub.textContent)}</div>` : ""}`;
   goalsPanel.prepend(bar);
   goalsPanel.classList.add("has-sec-bar");
