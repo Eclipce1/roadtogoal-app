@@ -429,6 +429,7 @@ backEl.addEventListener("click", (e) => {
 function afterStart(data) {
   setTimeout(() => {
     if (!hasPlan(data) && !data.wizardDismissed) openWizard(data);
-    else if (!maybeShowWelcomeBack(data)) maybeShowReview(data);
+    // the long "welcome back" pop-up is gone: the "Сегодня" screen greets a returning visitor softly
+    else maybeShowReview(data);
   }, 700);
 }
