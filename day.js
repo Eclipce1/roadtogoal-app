@@ -52,10 +52,10 @@ function myItems() {
 
   agendaItems(today)
     .filter((it) => !it.done)
-    .forEach((it) => items.push({ kind: "plan", id: it.id, title: it.text, sub: "Дела на сегодня" }));
+    .forEach((it) => items.push({ kind: "plan", id: it.id, title: it.text, sub: "Дело на сегодня" }));
 
   const step = (lastData.subGoals || []).find((s) => !s.done);
-  if (step) items.push({ kind: "step", id: step.id, title: step.title, sub: `Следующий шаг: ${lastData.mainGoal || "цель"}` });
+  if (step) items.push({ kind: "step", id: step.id, title: step.title, sub: `Шаг цели «${lastData.mainGoal || "цель"}»` });
 
   return { shown: items.slice(0, MY_MAX_ITEMS), more: Math.max(0, items.length - MY_MAX_ITEMS) };
 }
@@ -127,29 +127,25 @@ function dayMainHtml() {
   const today = todayISO();
   const dateText = new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
   const checkedIn = lastData.mode === "steps" && (lastData.checkins || []).includes(today);
-  const streak = lastData.mode === "steps" ? streakInfo(lastData.checkins).count : 0;
-  const empty = !shown.length;
-  const line = myMsg || (empty ? "На сегодня всё. Можно отдохнуть." : "Вот минимум на сегодня. Остальное подождёт.");
+  const stale = overdueInfo().items;
 
   return `
     <div class="goals-top">
       <div>
-        <div class="goals-title">${myGreeting()}</div>
-        <div class="goals-sub">${escapeHtml(dateText)}</div>
+        <div class="goals-title">Сегодня</div>
+        <div class="goals-sub">${escapeHtml(upperFirst(dateText))}</div>
       </div>
     </div>
     <div class="goals-list my-day">
-      ${myReturnHtml()}
-      <div class="my-line">${escapeHtml(line)}</div>
-      <div class="my-items">${shown.map(myItemHtml).join("")}</div>
-      ${more ? `<button type="button" class="my-more" data-act="my-more">Ещё ${more} на сегодня →</button>` : ""}
+      ${myMsg ? `<div class="my-line">${escapeHtml(myMsg)}</div>` : ""}
+      <div class="my-items">${shown.length ? shown.map(myItemHtml).join("") : `<div class="my-empty">На сегодня всё.</div>`}</div>
+      ${more ? `<button type="button" class="my-more" data-act="my-more">Ещё ${more} →</button>` : ""}
       ${
         lastData.mode === "steps"
-          ? `<button type="button" class="my-checkin${checkedIn ? " on" : ""}" data-act="my-checkin">${checkedIn ? "✓ Сегодня отмечено" : "Отметить день"}${streak ? `<span>серия ${streak} ${plural(streak, "день", "дня", "дней")}</span>` : ""}</button>`
+          ? `<button type="button" class="my-checkin${checkedIn ? " on" : ""}" data-act="my-checkin">${checkedIn ? "✓ День отмечен" : "Отметить день"}</button>`
           : ""
       }
-      <div class="my-wins">${escapeHtml(myWinsText(myWins()))}</div>
-      ${myReminderHtml()}
+      ${stale ? `<button type="button" class="my-more my-clear" data-act="my-clear">Убрать старые невыполненные дела (${stale})</button>` : ""}
     </div>`;
 }
 
@@ -158,7 +154,7 @@ function dayMainHtml() {
 function myAfterTick() {
   const { shown, more } = myItems();
   const left = shown.length + more;
-  myMsg = left ? `Отлично! Осталось ${left}.` : "Всё на сегодня сделано. Можно отдохнуть.";
+  myMsg = left ? `Осталось: ${left}` : "На сегодня всё!";
   renderGoals();
 }
 
@@ -201,7 +197,7 @@ goalsPanel.addEventListener("click", async (e) => {
     lastData = await api.toggle_checkin(todayISO());
     if (was) Sound.undo();
     else Sound.step();
-    myMsg = was ? "" : "День отмечен. Это уже победа.";
+    myMsg = "";
     renderGoals();
     if (typeof render === "function") render(lastData, { scrollToCurrent: false });
   } else if (act === "my-hide-return") {
@@ -211,15 +207,15 @@ goalsPanel.addEventListener("click", async (e) => {
     renderGoals();
   } else if (act === "my-clear") {
     const ok = await confirmDialog({
-      title: "Начать с чистого листа?",
-      text: "Невыполненные дела из прошлых дней исчезнут из планирования. Сделанное и задания по учёбе останутся.",
-      yes: "Начать",
-      no: "Не сейчас",
+      title: "Убрать старые дела?",
+      text: "Невыполненные дела прошлых дней пропадут из планирования. Сделанное и учёба останутся.",
+      yes: "Убрать",
+      no: "Отмена",
     });
     if (!ok) return;
     lastData = await api.clear_overdue_plan();
     myReturnSeen = false;
-    myMsg = "Чистый лист. Начнём с сегодняшнего дня.";
+    myMsg = "Готово.";
     renderGoals();
   } else if (act === "my-remind") {
     lastData = await api.set_reminder(true, "20:00");

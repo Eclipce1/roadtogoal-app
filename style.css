@@ -3740,3 +3740,5 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .my-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 .my-note { font-size: 12.5px !important; color: var(--text-3) !important; }
 .my-return + .my-line { margin-top: 0; }
+.my-empty { padding: 18px 4px; font-size: 17px; color: var(--text-2); }
+.my-clear { display: block; margin-top: 22px; color: var(--text-3); font-size: 13px; }
