@@ -129,12 +129,14 @@ function dayMainHtml() {
   const checkedIn = lastData.mode === "steps" && (lastData.checkins || []).includes(today);
   const stale = overdueInfo().items;
 
+  const streak = lastData.mode === "steps" ? streakInfo(lastData.checkins).count : 0;
   return `
     <div class="goals-top">
       <div>
         <div class="goals-title">Сегодня</div>
         <div class="goals-sub">${escapeHtml(upperFirst(dateText))}</div>
       </div>
+      ${streak ? `<div class="my-streak" title="Дней подряд с отметкой">Серия <b>${streak}</b></div>` : ""}
     </div>
     <div class="goals-list my-day">
       ${myMsg ? `<div class="my-line">${escapeHtml(myMsg)}</div>` : ""}

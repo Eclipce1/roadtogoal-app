@@ -1172,11 +1172,32 @@ new ResizeObserver(() => {
   }
 }).observe(roadWrap);
 
+function showFullscreenExit() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "fs-exit";
+  btn.textContent = "Свернуть в окно";
+  btn.addEventListener("click", async () => {
+    try {
+      await api.exit_fullscreen();
+    } catch (e) {}
+    btn.remove();
+  });
+  document.body.appendChild(btn);
+}
+
 // start only after every script on the page (quotes, icons, goal plan) has loaded
 window.addEventListener("DOMContentLoaded", async () => {
   const data = await api.get_data();
   render(data, { scrollToCurrent: true });
   if (typeof Sync !== "undefined") Sync.start();
+  // opened over the whole screen by Windows: offer the way back to a normal window
+  if (IN_DESKTOP && !PREVIEW) {
+    try {
+      const launch = await api.get_launch();
+      if (launch && launch.fullscreen) showFullscreenExit();
+    } catch (e) {}
+  }
   // with a server configured, a visitor first signs in (or chooses to go on without an account)
   if (typeof Auth !== "undefined" && Auth.enabled() && !Auth.signedIn() && !Auth.skipped()) await Auth.showScreen("login");
   showGreetScreen((section) => {

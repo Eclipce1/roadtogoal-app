@@ -251,6 +251,7 @@ async function applyReminder(enabled) {
 
 function autostartControl() {
   const on = !!(lastData.settings && lastData.settings.autostart);
+  const fs = !lastData.settings || lastData.settings.autostartFullscreen !== false;
   return `
     <div class="remind-wrap autostart-wrap">
       <button type="button" class="remind-btn${on ? " on" : ""}" data-act="autostart-open" title="Запуск с Windows">
@@ -265,6 +266,10 @@ function autostartControl() {
           <button type="button" class="switch${on ? " on" : ""}" data-act="autostart-switch" aria-label="Включить автозапуск"><i></i></button>
         </div>
         <p class="remind-note">Приложение само откроется, когда ты включишь компьютер и войдёшь в Windows.</p>
+        <div class="remind-row">
+          <span>На весь экран при запуске</span>
+          <button type="button" class="switch${fs ? " on" : ""}" data-act="autostart-fs-switch" aria-label="Открывать на весь экран"><i></i></button>
+        </div>
         <p class="remind-error" hidden>Не получилось включить автозапуск в Windows. Попробуй ещё раз.</p>
       </div>
     </div>`;
@@ -309,6 +314,11 @@ goalsPanel.addEventListener("click", async (e) => {
   }
   if (act === "autostart-open") {
     el.closest(".remind-wrap").classList.toggle("open");
+    return;
+  }
+  if (act === "autostart-fs-switch") {
+    lastData = await api.set_autostart_fullscreen(!el.classList.contains("on"));
+    el.classList.toggle("on");
     return;
   }
   if (act === "autostart-switch") {
