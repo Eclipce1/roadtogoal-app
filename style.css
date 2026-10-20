@@ -3769,3 +3769,12 @@ body.local .remind-wrap.auth-wrap { display: block; }
 .nav-handle:hover { color: #fff !important; background: rgba(125, 211, 252, 0.34); }
 @media (max-width: 700px) { .nav-handle-label { display: none; } }
 @media (min-width: 701px) { .nav-rail { transform: translateX(-188px); } .nav-rail:hover, .nav-rail.open, .nav-rail.peek { transform: none; } }
+
+/* a slow glow on the menu tab so the eye finds it (computers only; it rests while the menu is out) */
+@media (min-width: 701px) and (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .nav-rail:not(:hover):not(.open):not(.peek) .nav-handle { animation: handlePulse 2.6s ease-in-out infinite; }
+  @keyframes handlePulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(125, 211, 252, 0.2); background-color: rgba(125, 211, 252, 0.14); }
+    50% { box-shadow: 0 0 26px rgba(125, 211, 252, 0.7); background-color: rgba(125, 211, 252, 0.3); }
+  }
+}
