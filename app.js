@@ -1220,7 +1220,24 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
   // with a server configured, a visitor first signs in (or chooses to go on without an account)
   if (typeof Auth !== "undefined" && Auth.enabled() && !Auth.signedIn() && !Auth.skipped()) await Auth.showScreen("login");
+  // The welcome with its choice of tabs appears once a day. Later starts the same day go
+  // straight back to the tab that was open last.
+  const GREETED_KEY = "roadtogoal_greeted_on";
+  let greetedToday = false;
+  let lastTab = "";
+  try {
+    greetedToday = localStorage.getItem(GREETED_KEY) === todayISO();
+    lastTab = localStorage.getItem("roadtogoal_last_tab") || "";
+  } catch (e) {}
+  if (greetedToday) {
+    if (lastTab && lastTab !== "road") openGoals(lastTab);
+    afterStart(data);
+    return;
+  }
   showGreetScreen((section) => {
+    try {
+      localStorage.setItem(GREETED_KEY, todayISO());
+    } catch (e) {}
     openGoals(section);
     afterStart(data);
   });

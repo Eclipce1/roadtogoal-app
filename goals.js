@@ -9,9 +9,18 @@ let goalsMode = window.matchMedia("(max-width: 700px)").matches ? "list" : "grap
 let goalsSection = "goals"; // "day" | "goals" | "plan" | "study" — the nav-rail tabs
 
 // section is optional: pass it to jump straight to a tab, or omit to keep the current one
+// the tab you were last in is remembered on this device, so the next start can open right there
+const LAST_TAB_KEY = "roadtogoal_last_tab";
+function rememberTab(name) {
+  try {
+    localStorage.setItem(LAST_TAB_KEY, name);
+  } catch (e) {}
+}
+
 function openGoals(section) {
   if (!lastData) return;
   if (section) goalsSection = section;
+  rememberTab(goalsSection);
   renderGoals();
   goalsEl.classList.add("open");
   updateNavRail();
@@ -19,6 +28,7 @@ function openGoals(section) {
 
 function closeGoals() {
   goalsEl.classList.remove("open");
+  rememberTab("road");
   Graph.stop();
   updateNavRail();
 }
