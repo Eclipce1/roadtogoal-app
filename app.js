@@ -720,6 +720,11 @@ function drawTrack(points, reachIndex, animate, finished) {
   nodesLayer.style.width = width + "px";
 
   const stairs = roadTheme() === "stairs";
+  // the clip left over from a walk on the stairs must not cut a road drawn afterwards
+  if (climber.lit) {
+    climber.lit.cancel();
+    climber.lit = null;
+  }
   litRect.setAttribute("width", "99999");
   litRect.setAttribute("height", roadWrap.clientHeight + 40);
   if (stairs) animate = false; // the lit trail is drawn by the walk itself (see placeClimber)
