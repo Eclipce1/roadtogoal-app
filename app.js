@@ -917,21 +917,24 @@ const CLIMBER_SVG = `
 const climber = { el: null, state: null, goal: null, px: 0, py: 0, timers: [], lit: null };
 
 // While he stands still he does something now and then, never the same twice in a row.
-const IDLE_MOVES = { think: 3200, scratch: 2700, wave: 2500, stretch: 2100, sway: 3000, hop: 1800 };
+const IDLE_MOVES = { think: 7300, scratch: 6200, wave: 6000, stretch: 5000, sway: 8000, hop: 5000 }; // ms; each move ends back in his usual pose
 let idleLast = "";
 function climberIdleTick() {
   const el = climber.el;
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const walking = el && el.getAnimations().some((a) => a.playState === "running");
-  const busy = !el || el.hidden || calm || document.hidden || walking || /\b(walking|planting|back|win)\b/.test(el.className) || goalsEl.classList.contains("open");
+  const busy = !el || el.hidden || calm || document.hidden || walking || /\b(walking|planting|back|win|idle-\w+)\b/.test(el.className) || goalsEl.classList.contains("open");
+  let wait = 3000;
   if (!busy) {
     const kinds = Object.keys(IDLE_MOVES).filter((k) => k !== idleLast);
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
     idleLast = kind;
     el.classList.add("idle-" + kind);
-    climber.timers.push(setTimeout(() => el.classList.remove("idle-" + kind), IDLE_MOVES[kind]));
+    // the class stays exactly as long as the move lasts, so a move is never cut off half way
+    climber.timers.push(setTimeout(() => el.classList.remove("idle-" + kind), IDLE_MOVES[kind] + 30));
+    wait = IDLE_MOVES[kind] + 2500 + Math.random() * 3500; // and a rest before the next one
   }
-  setTimeout(climberIdleTick, 3500 + Math.random() * 3500);
+  setTimeout(climberIdleTick, wait);
 }
 
 const FLAG_STAND = 17; // where he stands to plant a flag (the pole is a little further right)
