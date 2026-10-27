@@ -591,6 +591,7 @@ const CIRCLE_CY = 38;
 let trackBg = null;
 let trackAreaBg = null;
 let trackArea = null;
+let litRect = null;
 let trackGlow = null;
 let trackFill = null;
 let fillLen = 0;
@@ -698,7 +699,7 @@ function pathFromPoints(points) {
 function ensureTrackPaths() {
   if (trackBg) return;
   svg.innerHTML =
-    '<defs><linearGradient id="stairsLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--white)" stop-opacity=".16"/><stop offset="1" style="stop-color:var(--white)" stop-opacity="0"/></linearGradient></defs>' +
+    '<defs><clipPath id="litClip"><rect id="litRect" x="0" y="-20" width="99999" height="2000"/></clipPath><linearGradient id="stairsLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--white)" stop-opacity=".16"/><stop offset="1" style="stop-color:var(--white)" stop-opacity="0"/></linearGradient></defs>' +
     '<path class="track-area-bg" d="" /><path class="track-area" d="" />' +
     '<path class="track-bg" d="" /><path class="track-glow" d="" /><path class="track-fill" d="" />';
   trackAreaBg = svg.querySelector(".track-area-bg");
@@ -706,6 +707,9 @@ function ensureTrackPaths() {
   trackBg = svg.querySelector(".track-bg");
   trackGlow = svg.querySelector(".track-glow");
   trackFill = svg.querySelector(".track-fill");
+  litRect = svg.querySelector("#litRect");
+  // the lit part of the stairs is shown through this clip: on the stairs it follows the man
+  [trackArea, trackGlow, trackFill].forEach((p) => p.setAttribute("clip-path", "url(#litClip)"));
 }
 
 function drawTrack(points, reachIndex, animate, finished) {
@@ -716,6 +720,9 @@ function drawTrack(points, reachIndex, animate, finished) {
   nodesLayer.style.width = width + "px";
 
   const stairs = roadTheme() === "stairs";
+  litRect.setAttribute("width", "99999");
+  litRect.setAttribute("height", roadWrap.clientHeight + 40);
+  if (stairs) animate = false; // the lit trail is drawn by the walk itself (see placeClimber)
   trackBg.setAttribute("d", stairs ? stairsPath(points) : pathFromPoints(points));
   if (!stairs) {
     trackAreaBg.setAttribute("d", "");
@@ -848,7 +855,7 @@ const CLIMBER_SVG = `
     </g>
   </svg>`;
 
-const climber = { el: null, idx: -1, goal: null, px: 0, py: 0, timers: [] };
+const climber = { el: null, idx: -1, goal: null, px: 0, py: 0, timers: [], lit: null };
 const CLIMBER_DX = -56; // where he waits: at the left end of the landing, beside the step's circle
 const FLAG_STAND = 17; // where he stands to plant the flag (the pole is a little further right)
 const FINISH_STAND = 76; // after the last flag he steps beyond it, onto the level ground
@@ -905,6 +912,8 @@ function placeClimber(points, current, data, completedId) {
 
   climber.timers.forEach(clearTimeout);
   climber.timers = [];
+  if (climber.lit) climber.lit.cancel();
+  climber.lit = null;
   el.getAnimations().forEach((a) => a.cancel());
   el.classList.remove("walking", "planting");
   el.classList.toggle("win", finished);
@@ -956,6 +965,15 @@ function placeClimber(points, current, data, completedId) {
     }
 
     const total = last().t;
+    if (scene && litRect) {
+      // the glowing trail grows behind him: its front edge is where he is, then it settles under the step
+      const startX = points[doneIdx].x;
+      const endX = finished ? points[points.length - 1].x + LANDING_HALF + LEAD : points[idx].x;
+      const whole = total + 300;
+      const frames = tl.map((f) => ({ width: `${Math.min(endX, Math.max(startX, f.x + 10))}px`, offset: f.t / whole }));
+      frames.push({ width: `${endX}px`, offset: 1 });
+      climber.lit = litRect.animate(frames, { duration: whole, fill: "both", easing: "linear" });
+    }
     const walk = el.animate(
       tl.map((f) => ({ transform: place(f), offset: f.t / total })),
       { duration: total, fill: "both", easing: "linear" }
