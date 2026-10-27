@@ -897,8 +897,10 @@ const CLIMBER_SVG = `
     <g class="cl-leg cl-leg-b"><path d="M20 42 L31 50 L31 66" stroke-width="7.5"/></g>
     <g class="cl-arm cl-arm-b">
       <path d="M24 23 L32 27 L37 20" stroke-width="5.5"/>
-      <path d="M37 24 V-4" stroke-width="2.2"/>
-      <path class="flag-cloth" d="M37.5 -3 L54 2.5 L37.5 9Z" fill="#4ade80" stroke="none"/>
+      <g class="cl-flag">
+        <path d="M37 24 V-4" stroke-width="2.2"/>
+        <path class="flag-cloth" d="M37.5 -3 L54 2.5 L37.5 9Z" fill="#4ade80" stroke="none"/>
+      </g>
     </g>
     <path d="M24 19 L20 42" stroke-width="9.5"/>
     <g class="cl-head"><circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/></g>
@@ -914,12 +916,59 @@ const CLIMBER_SVG = `
       <path d="M40 14 V-14" stroke-width="2.2"/>
       <path class="flag-cloth" d="M40.5 -13 L58 -7.5 L40.5 -1Z" fill="#4ade80" stroke="none"/>
     </g>
+    <g class="cl-props" stroke="none">
+      <g transform="translate(38 28)"><g class="cl-prop cl-book">
+        <path d="M-13 -7 L0 -4 L13 -7 L13 6 L0 9 L-13 6 Z" fill="#3b82f6"/>
+        <path d="M-11.5 -5.6 L0 -2.8 L11.5 -5.6 L11.5 4.8 L0 7.6 L-11.5 4.8 Z" fill="#e2e8f0"/>
+        <path d="M0 -2.8 V7.6" stroke="#64748b" stroke-width="1" fill="none"/>
+        <g class="cl-page"><path d="M0 -2.8 L11.5 -5.6 L11.5 4.8 L0 7.6 Z" fill="#f8fafc" stroke="#94a3b8" stroke-width=".6"/></g>
+      </g></g>
+      <g transform="translate(42 25)"><g class="cl-prop cl-glass"><g class="cl-sweep">
+        <circle r="7" fill="#93c5fd" fill-opacity=".25" stroke="#fbbf24" stroke-width="2.4"/>
+        <path d="M5 5 L11.5 11.5" stroke="#fbbf24" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M-3.6 -2.4 A4.4 4.4 0 0 1 -0.6 -4.6" stroke="#fff" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      </g></g></g>
+      <g transform="translate(40 26)"><g class="cl-prop cl-pad">
+        <rect x="-8" y="-10" width="16" height="20" rx="2" fill="#fde68a"/>
+        <rect x="-8" y="-10" width="16" height="3.5" rx="1.5" fill="#f59e0b"/>
+        <path class="cl-ln cl-ln1" pathLength="1" d="M-5 -3 H5" stroke="#92400e" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path class="cl-ln cl-ln2" pathLength="1" d="M-5 1.5 H5" stroke="#92400e" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <path class="cl-ln cl-ln3" pathLength="1" d="M-5 6 H2" stroke="#92400e" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+        <g class="cl-pen"><path d="M3 4 L10 -3" stroke="#f97316" stroke-width="2.2" stroke-linecap="round" fill="none"/></g>
+      </g></g>
+      <g transform="translate(38 25)"><g class="cl-prop cl-phone">
+        <rect x="-5" y="-9" width="10" height="18" rx="2.2" fill="#0f172a" stroke="#94a3b8" stroke-width="1.2"/>
+        <g class="cl-screen"><rect x="-3.4" y="-6.4" width="6.8" height="12" rx="1" fill="#38bdf8"/><path d="M-2 -3 H2 M-2 0 H2 M-2 3 H1" stroke="#e0f2fe" stroke-width="1" stroke-linecap="round" fill="none"/></g>
+      </g></g>
+      <g transform="translate(38 28)"><g class="cl-prop cl-mug"><g class="cl-sip">
+        <rect x="-5" y="-4" width="10" height="9" rx="1.6" fill="#f59e0b"/>
+        <path d="M5 -2 C9 -2 9 3 5 3" stroke="#f59e0b" stroke-width="1.6" fill="none"/>
+        <g class="cl-steam" stroke="#e5e7eb" stroke-width="1.2" stroke-linecap="round" fill="none">
+          <path class="cl-st cl-st1" d="M-2.5 -6 C-4 -8 -1 -10 -2.5 -12"/><path class="cl-st cl-st2" d="M0.5 -6 C-1 -8 2 -10 0.5 -12"/><path class="cl-st cl-st3" d="M3.5 -6 C2 -8 5 -10 3.5 -12"/>
+        </g>
+      </g></g></g>
+      <g transform="translate(25 -15)"><g class="cl-prop cl-bulb">
+        <g stroke="#fde047" stroke-width="1.6" stroke-linecap="round" fill="none"><path d="M0 -12 V-9 M-9 -8 L-7 -6.5 M9 -8 L7 -6.5 M-12 0 H-9 M12 0 H9"/></g>
+        <circle r="6" fill="#fde047"/><rect x="-3" y="5" width="6" height="3.4" rx="1" fill="#a8a29e"/>
+      </g></g>
+      <g transform="translate(25 -15)"><g class="cl-prop cl-bang"><text text-anchor="middle" font-size="17" font-weight="800" fill="#fbbf24" y="4">!</text></g></g>
+      <g transform="translate(36 11) rotate(-20)"><g class="cl-prop cl-scope"><g class="cl-pan">
+        <rect x="-2" y="-3.2" width="22" height="6.4" rx="2" fill="#14b8a6"/>
+        <rect x="15" y="-4.2" width="6" height="8.4" rx="1.6" fill="#0f766e"/>
+        <rect x="-3" y="-2.2" width="3" height="4.4" rx="1" fill="#99f6e4"/>
+      </g></g></g>
+      <g transform="translate(9 3)" fill="#93c5fd" font-weight="800" text-anchor="middle">
+        <g class="cl-prop cl-z cl-z1"><text font-size="8">z</text></g>
+        <g class="cl-prop cl-z cl-z2"><text font-size="10">z</text></g>
+        <g class="cl-prop cl-z cl-z3"><text font-size="13">Z</text></g>
+      </g>
+    </g>
   </svg>`;
 
 const climber = { el: null, state: null, goal: null, px: 0, py: 0, timers: [], lit: null };
 
 // While he stands still he does something now and then, never the same twice in a row.
-const IDLE_MOVES = { think: 7300, scratch: 6200, wave: 6000, stretch: 5000, sway: 8000, hop: 5000 }; // ms; each move ends back in his usual pose
+const IDLE_MOVES = Object.fromEntries(["think", "scratch", "wave", "stretch", "sway", "hop", "read", "search", "notes", "phone", "coffee", "idea", "scope", "sleep", "jacks"].map((k) => [k, 15000])); // ms; each ends back in his usual pose
 let idleLast = "";
 let idleBag = [];
 function climberIdleTick() {
