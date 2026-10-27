@@ -336,7 +336,7 @@ const Sync = (() => {
   function busy() {
     const a = document.activeElement;
     const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && !a.classList.contains("sync-token");
-    const roadMoving = (typeof drag !== "undefined" && drag) || (typeof scrollAnim !== "undefined" && scrollAnim);
+    const roadMoving = (typeof drag !== "undefined" && drag) || (typeof scrollAnim !== "undefined" && scrollAnim) || (typeof cameraFollowing !== "undefined" && cameraFollowing);
     return (typeof card !== "undefined" && card) || typing || roadMoving;
   }
 

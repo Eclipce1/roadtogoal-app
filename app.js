@@ -604,6 +604,22 @@ const NODE_BLOCK_SHIFT = 28;
 // room a node needs besides the wave itself: tag above + circle + labels below
 const NODE_BLOCK_HEIGHT = 268;
 
+// The camera: the road scrolls by itself after him as he walks. Can be switched off in the settings.
+const CAMERA_KEY = "roadtogoal_camera";
+function cameraOn() {
+  try {
+    return localStorage.getItem(CAMERA_KEY) !== "off";
+  } catch (e) {
+    return true;
+  }
+}
+
+function setCamera(on) {
+  try {
+    localStorage.setItem(CAMERA_KEY, on ? "on" : "off");
+  } catch (e) {}
+}
+
 // The road can be drawn two ways, chosen in the settings and kept on this device:
 // "road" is the winding line, "stairs" a staircase with a little man climbing it.
 const ROAD_THEME_KEY = "roadtogoal_road_theme";
@@ -875,10 +891,15 @@ function render(data, opts = {}) {
 
   if (burstTarget) burst(burstTarget);
   placeClimber(points, track, data, st, climb);
-  // the road follows him: when he sets off after planting a flag, or all the way back after an undo
-  const later = (ms, fn) => (ms ? setTimeout(fn, ms) : fn());
-  const scrollTo = (x) => later(plan && plan.mode === "complete" ? plan.leaveAt : 0, () => scrollRoadTo(x));
-  if (plan && plan.mode === "undo") setTimeout(() => scrollRoadTo(points[st.c].x - roadWrap.clientWidth / 2), CARD_WAIT);
+  const walking = plan ? plan.tl[plan.tl.length - 1].t : 0;
+  if (plan) followClimber(walking); // the camera goes with him
+  const sceneOn = !!(opts.justCompleted || (opts.justReset && opts.justReset.length));
+  // road theme and the first placement: one glide to the step, unless the camera is off for scenes
+  const scrollTo = (x) => {
+    if (plan) return; // the follow loop is doing it
+    if (sceneOn && !cameraOn()) return;
+    scrollRoadTo(x);
+  };
   const flashIndex = data.subGoals.findIndex((g) => g.id === opts.flashId);
   if (flashIndex !== -1) {
     scrollTo(points[flashIndex].x - roadWrap.clientWidth / 2);
@@ -1486,6 +1507,37 @@ function runScroll() {
     scrollAnim = requestAnimationFrame(tick);
   };
   scrollAnim = requestAnimationFrame(tick);
+}
+
+// While he walks the camera glides after him: every frame it closes a small part of the distance to
+// where he is, so it starts and stops softly instead of jumping to a place.
+let cameraFollowing = false;
+let cameraRaf = null;
+function followClimber(ms) {
+  if (cameraRaf) cancelAnimationFrame(cameraRaf);
+  const el = climber.el;
+  if (!el || !cameraOn()) {
+    cameraFollowing = false;
+    cameraRaf = null;
+    return;
+  }
+  cameraFollowing = true;
+  const t0 = performance.now();
+  const tick = () => {
+    const userHasIt = drag || Date.now() - lastTouchAt < 1500;
+    if (!userHasIt) {
+      const m = new DOMMatrix(getComputedStyle(el).transform);
+      const target = clampScroll(m.m41 + 22 - roadWrap.clientWidth * 0.45);
+      const cur = roadWrap.scrollLeft;
+      roadWrap.scrollLeft = Math.abs(target - cur) < 0.4 ? target : cur + (target - cur) * 0.06;
+    }
+    if (performance.now() - t0 < ms + 900) cameraRaf = requestAnimationFrame(tick);
+    else {
+      cameraFollowing = false;
+      cameraRaf = null;
+    }
+  };
+  cameraRaf = requestAnimationFrame(tick);
 }
 
 function scrollRoadTo(x) {

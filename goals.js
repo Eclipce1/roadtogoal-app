@@ -221,7 +221,12 @@ function settingsBodyHtml(tab) {
       <div class="look-choices">
         ${card("road", "Дорога", "Извилистая линия, по которой идёшь шаг за шагом", ROAD_PREVIEW)}
         ${card("stairs", "Лестница", "Человечек поднимается на ступеньку с каждым выполненным шагом", STAIRS_PREVIEW)}
-      </div><div style="height:12px"></div></div>`;
+      </div><div style="height:12px"></div></div>
+      <div class="set-block" style="margin-top:12px">${settingsRowHtml(
+        "Камера",
+        "Дорожка плавно едет за человечком. Выключите, чтобы двигать её только рукой",
+        `<button type="button" class="switch${cameraOn() ? " on" : ""}" data-act="camera-switch" aria-label="Камера следует за человечком"><i></i></button>`
+      )}</div>`;
   }
   if (tab === "sync") {
     const acct = typeof Auth !== "undefined" && Auth.enabled();
@@ -425,6 +430,11 @@ goalsPanel.addEventListener("click", async (e) => {
 
   if (act === "settings-close") {
     closeSettings();
+    return;
+  }
+  if (act === "camera-switch") {
+    setCamera(!cameraOn());
+    renderGoals();
     return;
   }
   if (act === "road-theme") {
