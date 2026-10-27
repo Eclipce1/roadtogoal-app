@@ -1172,6 +1172,48 @@ new ResizeObserver(() => {
   }
 }).observe(roadWrap);
 
+/* ---------- light / dark ---------- */
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+function applyTheme(theme) {
+  if (theme === "light") document.documentElement.dataset.theme = "light";
+  else delete document.documentElement.dataset.theme;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", theme === "light" ? "#f6f6f3" : "#000000");
+  try {
+    localStorage.setItem("roadtogoal_theme", theme);
+  } catch (e) {}
+  document.querySelectorAll(".theme-toggle").forEach(paintThemeButton);
+}
+
+const THEME_ICONS = {
+  // the icon shows what a click switches to
+  toSun: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  toMoon: '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg>',
+};
+
+function paintThemeButton(btn) {
+  const light = currentTheme() === "light";
+  btn.innerHTML = light ? THEME_ICONS.toMoon : THEME_ICONS.toSun;
+  btn.title = light ? "Тёмная тема" : "Светлая тема";
+}
+
+function toggleTheme() {
+  applyTheme(currentTheme() === "light" ? "dark" : "light");
+}
+
+function setupThemeToggle() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "theme-toggle";
+  btn.addEventListener("click", toggleTheme);
+  paintThemeButton(btn);
+  document.body.appendChild(btn);
+}
+
 // A button that is always there on the computer: full screen on, full screen off.
 // F11 does the same, and Esc leaves full screen when nothing else is open.
 function setupFullscreenToggle(startFull) {
@@ -1220,6 +1262,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
   // with a server configured, a visitor first signs in (or chooses to go on without an account)
   if (typeof Auth !== "undefined" && Auth.enabled() && !Auth.signedIn() && !Auth.skipped()) await Auth.showScreen("login");
+  setupThemeToggle();
   // The welcome with its choice of tabs appears once a day. Later starts the same day go
   // straight back to the tab that was open last.
   const GREETED_KEY = "roadtogoal_greeted_on";

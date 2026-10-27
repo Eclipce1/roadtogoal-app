@@ -192,6 +192,7 @@ function goalsMainHtml() {
       <div class="goals-tools">
         ${reminderControl()}
         ${autostartControl()}
+        <button type="button" class="remind-btn theme-btn" data-act="theme-switch" title="Светлая / тёмная тема">${currentTheme() === "light" ? "Тёмная тема" : "Светлая тема"}</button>
         ${typeof Auth !== "undefined" ? Auth.controlHtml() : ""}
         ${typeof Sync !== "undefined" ? Sync.controlHtml() : ""}
         <div class="seg">
@@ -329,6 +330,11 @@ goalsPanel.addEventListener("click", async (e) => {
   const goalEl = el.closest(".tree-goal");
   const goalId = goalEl ? +goalEl.dataset.goal : null;
 
+  if (act === "theme-switch") {
+    toggleTheme();
+    renderGoals();
+    return;
+  }
   if (act === "remind-open") {
     el.closest(".remind-wrap").classList.toggle("open");
     return;

@@ -82,7 +82,7 @@ const Graph = (() => {
   function draw() {
     svg.innerHTML = `
       <defs>
-        <radialGradient id="haloW"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <radialGradient id="haloW"><stop offset="0" style="stop-color:var(--white)" stop-opacity=".35"/><stop offset="1" style="stop-color:var(--white)" stop-opacity="0"/></radialGradient>
         <radialGradient id="haloG"><stop offset="0" stop-color="#4ade80" stop-opacity=".45"/><stop offset="1" stop-color="#4ade80" stop-opacity="0"/></radialGradient>
         <radialGradient id="haloY"><stop offset="0" stop-color="#ffd98a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
       </defs>`;

@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>RoadToGoal</title>
 <meta name="theme-color" content="#000000" />
+  <script>
+    // the chosen theme is set before anything is drawn, so a light page never flashes dark
+    try { var t = localStorage.getItem("roadtogoal_theme"); if (t === "light") { document.documentElement.dataset.theme = "light"; document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f6f3"); } } catch (e) {}
+  </script>
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-title" content="RoadToGoal" />
