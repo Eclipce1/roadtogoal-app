@@ -623,7 +623,7 @@ function setRoadTheme(theme) {
 
 // stairs: room above the highest step for the man, room below the lowest for the labels
 const STAIRS_TOP = 92;
-const STAIRS_BOTTOM = 98;
+const STAIRS_BOTTOM = 128;
 const STAIRS_RISE = 120;
 
 function stairsLayout(count, height) {
@@ -638,12 +638,12 @@ function stairsLayout(count, height) {
 
 // Each step of the goal is a landing; between two landings the stairs climb in several small
 // steps (think big, act small). `upTo` stops in the middle of that landing.
-const LANDING_HALF = 56;
+const LANDING_HALF = 46;
 const LEAD = 44; // a little level ground before the first and after the last landing
 
 function smallStepsCount(points) {
   const rise = points.length > 1 ? points[0].y - points[1].y : 0;
-  return Math.max(1, Math.min(9, Math.round(rise / 5.5)));
+  return Math.max(2, Math.min(5, Math.round(rise / 22)));
 }
 
 function stairsPath(points, upTo) {
@@ -862,7 +862,7 @@ const CLIMBER_SVG = `
   </svg>`;
 
 const climber = { el: null, idx: -1, goal: null, fin: false, px: 0, py: 0, timers: [], lit: null };
-const CLIMBER_DX = -56; // where he waits: at the left end of the landing, beside the step's circle
+const CLIMBER_DX = -46; // where he waits: at the left end of the landing, beside the step's circle
 const FLAG_STAND = 17; // where he stands to plant the flag (the pole is a little further right)
 const FINISH_STAND = 76; // after the last flag he steps beyond it, onto the level ground
 
@@ -870,7 +870,7 @@ const FINISH_STAND = 76; // after the last flag he steps beyond it, onto the lev
 // plants the flag, and only then climbs, step by step, to the next landing.
 const CARD_WAIT = 450; // the step card fades out first
 const FLAT_SPEED = 110; // px per second on the level
-const STEP_TIME = 230; // ms for one small step up
+const STEP_TIME = 340; // ms for one small step up
 const PLANT_TIME = 1000; // the flag grows out of the ground
 const FLAG_WALK_MS = Math.round(((FLAG_STAND - CLIMBER_DX) / FLAT_SPEED) * 1000);
 const FLAG_DELAY = CARD_WAIT + FLAG_WALK_MS; // when the planted flag starts to grow
@@ -896,7 +896,7 @@ function stairsWalk(points, a, b) {
   return b > a ? pts : pts.reverse();
 }
 
-const PICK_STAND = 52; // where he stands to take a flag up: just right of the pole
+const PICK_STAND = 44; // where he stands to take a flag up: just right of the pole
 const PICK_TIME = 700;
 const LIFT_TIME = 500;
 
@@ -930,7 +930,7 @@ function planUndo(points, data, resetIds) {
   landings.forEach((j) => {
     if (cur > j) {
       walkLine(standAt(points, cur, false));
-      stairsWalk(points, cur, j).forEach((p) => go(p, STEP_TIME, 5));
+      stairsWalk(points, cur, j).forEach((p) => go(p, STEP_TIME, 7));
     }
     walkLine({ x: points[j].x + PICK_STAND, y: points[j].y });
     marks.push([last().t, "walking", false], [last().t, "planting", true]);
@@ -994,7 +994,7 @@ function placeClimber(points, current, data, completedId, undoPlan) {
       tl.push({ t: prev.t + ms, x: p.x, y: p.y });
     };
     const walkLine = (p) => go(p, Math.max(140, (Math.abs(p.x - last().x) / FLAT_SPEED) * 1000));
-    const climb = (path) => path.forEach((p) => go(p, STEP_TIME, 5));
+    const climb = (path) => path.forEach((p) => go(p, STEP_TIME, 7));
 
     if (undoPlan) {
       tl = undoPlan.tl;
