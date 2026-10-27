@@ -621,9 +621,9 @@ function setRoadTheme(theme) {
 }
 
 // stairs: room above the highest step for the man, room below the lowest for the labels
-const STAIRS_TOP = 100;
-const STAIRS_BOTTOM = 112;
-const STAIRS_RISE = 84;
+const STAIRS_TOP = 92;
+const STAIRS_BOTTOM = 98;
+const STAIRS_RISE = 120;
 
 function stairsLayout(count, height) {
   const room = Math.max(0, height - STAIRS_TOP - STAIRS_BOTTOM);
