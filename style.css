@@ -4112,3 +4112,11 @@ body.local .settings-row .remind-wrap { display: block; }
 
 .help-btn { width: 42px; height: 42px; }
 .help-btn svg { width: 28px; height: 28px; }
+
+/* the full-screen switch is as bright as the "?" below it */
+.fs-toggle { color: var(--text); background: rgba(20, 20, 22, 0.85); border-color: rgba(var(--fg), 0.22); }
+.fs-toggle:hover { border-color: rgba(var(--fg), 0.5); }
+.fs-toggle:not(.on) { width: 42px; height: 42px; min-width: 42px; padding: 0; bottom: 64px; }
+.fs-toggle:not(.on) svg { width: 22px; height: 22px; }
+.fs-toggle.on { color: var(--text); border-color: rgba(var(--fg), 0.3); }
+.help-card.high { bottom: 114px; }
