@@ -921,6 +921,7 @@ const climber = { el: null, state: null, goal: null, px: 0, py: 0, timers: [], l
 // While he stands still he does something now and then, never the same twice in a row.
 const IDLE_MOVES = { think: 7300, scratch: 6200, wave: 6000, stretch: 5000, sway: 8000, hop: 5000 }; // ms; each move ends back in his usual pose
 let idleLast = "";
+let idleBag = [];
 function climberIdleTick() {
   const el = climber.el;
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -928,13 +929,17 @@ function climberIdleTick() {
   const busy = !el || el.hidden || calm || document.hidden || walking || /\b(walking|planting|back|win|idle-\w+)\b/.test(el.className) || goalsEl.classList.contains("open");
   let wait = 3000;
   if (!busy) {
-    const kinds = Object.keys(IDLE_MOVES).filter((k) => k !== idleLast);
-    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    // a shuffled round of all six, so every move comes up before any of them repeats
+    if (!idleBag.length) {
+      idleBag = Object.keys(IDLE_MOVES).sort(() => Math.random() - 0.5);
+      if (idleBag[idleBag.length - 1] === idleLast) idleBag.unshift(idleBag.pop());
+    }
+    const kind = idleBag.pop();
     idleLast = kind;
     el.classList.add("idle-" + kind);
     // the class stays exactly as long as the move lasts, so a move is never cut off half way
     climber.timers.push(setTimeout(() => el.classList.remove("idle-" + kind), IDLE_MOVES[kind] + 30));
-    wait = IDLE_MOVES[kind] + 2500 + Math.random() * 3500; // and a rest before the next one
+    wait = IDLE_MOVES[kind] + 1500 + Math.random() * 2000; // and a short rest before the next one
   }
   setTimeout(climberIdleTick, wait);
 }
