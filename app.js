@@ -624,15 +624,25 @@ function setRoadTheme(theme) {
 // stairs: room above the highest step for the man, room below the lowest for the labels
 const STAIRS_TOP = 92;
 const STAIRS_BOTTOM = 128;
-const STAIRS_RISE = 120;
+const STAIR_H_MAX = 22; // every small stair is this high at most, and all of them equally high
+const STAIR_W_MAX = 26;
 
-function stairsLayout(count, height) {
+// `ks` is how many small stairs lead up to each step. All stairs share one height (and one width):
+// a longer flight simply rises further, a shorter one is followed by more level ground.
+function stairsLayout(count, height, ks) {
   const room = Math.max(0, height - STAIRS_TOP - STAIRS_BOTTOM);
-  const rise = count > 1 ? Math.max(4, Math.min(STAIRS_RISE, room / (count - 1))) : 0;
-  const used = STAIRS_TOP + STAIRS_BOTTOM + (count - 1) * rise;
-  const lowest = Math.max(0, (height - used) / 2) + STAIRS_TOP + (count - 1) * rise;
+  let total = 0;
+  for (let i = 1; i < count; i++) total += ks[i];
+  const h = total ? Math.max(3, Math.min(STAIR_H_MAX, room / total)) : 0;
+  const w = Math.min(STAIR_W_MAX, (STEP_X - 2 * 46) / Math.max(1, ...ks.slice(1)));
+  const used = STAIRS_TOP + STAIRS_BOTTOM + total * h;
+  const lowest = Math.max(0, (height - used) / 2) + STAIRS_TOP + total * h;
   const points = [];
-  for (let i = 0; i < count; i++) points.push({ x: SIDE_PAD + i * STEP_X, y: lowest - i * rise });
+  let up = 0;
+  for (let i = 0; i < count; i++) {
+    if (i > 0) up += ks[i];
+    points.push({ x: SIDE_PAD + i * STEP_X, y: lowest - up * h, h, w });
+  }
   return points;
 }
 
@@ -653,13 +663,14 @@ function stairsInto(step) {
 function stairsPath(points, upTo) {
   if (!points.length) return "";
   const last = upTo === undefined ? points.length - 1 : upTo;
-  const run = STEP_X - 2 * LANDING_HALF;
   let d = `M ${points[0].x - LANDING_HALF - LEAD} ${points[0].y}`;
   for (let i = 0; i < last; i++) {
-    const { x, y } = points[i];
-    const k = points[i + 1].k || DEFAULT_STAIRS;
-    d += ` H ${x + LANDING_HALF}`;
-    for (let j = 1; j <= k; j++) d += ` V ${y + ((points[i + 1].y - y) * j) / k} H ${x + LANDING_HALF + (run * j) / k}`;
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const k = p1.k || DEFAULT_STAIRS;
+    const start = p1.x - LANDING_HALF - k * p1.w; // the flight stands right in front of the next landing
+    d += ` H ${p0.x + LANDING_HALF} H ${start}`;
+    for (let j = 1; j <= k; j++) d += ` V ${p0.y - p1.h * j} H ${start + p1.w * j}`;
   }
   d += upTo === undefined ? ` H ${points[last].x + LANDING_HALF + LEAD}` : ` H ${points[last].x}`;
   return d;
@@ -673,8 +684,8 @@ function stairsArea(points, upTo, bottom) {
   return `${d} V ${bottom} H ${points[0].x - LANDING_HALF - LEAD} Z`;
 }
 
-function layout(count, height) {
-  if (roadTheme() === "stairs") return stairsLayout(count, height);
+function layout(count, height, ks) {
+  if (roadTheme() === "stairs") return stairsLayout(count, height, ks);
   const centerY = height / 2 - NODE_BLOCK_SHIFT;
   // flatten the wave when the window is short so nodes never spill out of the road
   const amp = Math.max(0, Math.min(AMP, (height - NODE_BLOCK_HEIGHT) / 2));
@@ -785,8 +796,9 @@ function render(data, opts = {}) {
   document.getElementById("roadEmpty").hidden = total > 0;
   roadWrap.classList.toggle("theme-stairs", roadTheme() === "stairs");
   document.body.classList.toggle("road-stairs", roadTheme() === "stairs");
-  const points = layout(total, roadWrap.clientHeight);
-  points.forEach((p, i) => (p.k = stairsInto(data.subGoals[i])));
+  const stairCounts = data.subGoals.map(stairsInto);
+  const points = layout(total, roadWrap.clientHeight, stairCounts);
+  points.forEach((p, i) => (p.k = stairCounts[i]));
   const undoPlan = roadTheme() === "stairs" && opts.justReset && opts.justReset.length ? planUndo(points, data, opts.justReset) : null;
   const firstNotDone = data.subGoals.findIndex((g) => !g.done);
   // walking back, the stairs stay lit as they were until he has taken the flags up
@@ -893,14 +905,15 @@ function standAt(points, i, fin) {
 
 // the way along the stairs, tread by tread, from one landing to another (either direction)
 function stairsWalk(points, a, b) {
-  const run = STEP_X - 2 * LANDING_HALF;
   const pts = [];
   for (let i = Math.min(a, b); i < Math.max(a, b); i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
     const k = p1.k || DEFAULT_STAIRS;
+    const start = p1.x - LANDING_HALF - k * p1.w;
     pts.push({ x: p0.x + LANDING_HALF - 6, y: p0.y });
-    for (let j = 1; j <= k; j++) pts.push({ x: p0.x + LANDING_HALF + (run * (j - 0.5)) / k, y: p0.y + ((p1.y - p0.y) * j) / k });
+    pts.push({ x: start, y: p0.y });
+    for (let j = 1; j <= k; j++) pts.push({ x: start + p1.w * (j - 0.5), y: p0.y - p1.h * j });
     pts.push({ x: p1.x + CLIMBER_DX, y: p1.y });
   }
   return b > a ? pts : pts.reverse();
@@ -926,6 +939,11 @@ function planUndo(points, data, resetIds) {
   const hold = (ms) => tl.push({ t: last().t + ms, x: last().x, y: last().y });
   const go = (p, ms, bob = 0) => {
     const prev = last();
+    if (bob && Math.abs(p.y - prev.y) < 1) {
+      // level ground between flights: a plain walk, no stepping
+      ms = Math.max(150, (Math.abs(p.x - prev.x) / FLAT_SPEED) * 1000);
+      bob = 0;
+    }
     if (bob) tl.push({ t: prev.t + ms / 2, x: (prev.x + p.x) / 2, y: Math.min(prev.y, p.y) - bob });
     tl.push({ t: prev.t + ms, x: p.x, y: p.y });
   };
@@ -1000,6 +1018,10 @@ function placeClimber(points, current, data, completedId, undoPlan) {
     const hold = (ms) => tl.push({ t: last().t + ms, x: last().x, y: last().y });
     const go = (p, ms, bob = 0) => {
       const prev = last();
+      if (bob && Math.abs(p.y - prev.y) < 1) {
+        ms = Math.max(150, (Math.abs(p.x - prev.x) / FLAT_SPEED) * 1000);
+        bob = 0;
+      }
       if (bob) tl.push({ t: prev.t + ms / 2, x: (prev.x + p.x) / 2, y: Math.min(prev.y, p.y) - bob });
       tl.push({ t: prev.t + ms, x: p.x, y: p.y });
     };
