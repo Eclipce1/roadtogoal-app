@@ -599,7 +599,53 @@ const NODE_BLOCK_SHIFT = 28;
 // room a node needs besides the wave itself: tag above + circle + labels below
 const NODE_BLOCK_HEIGHT = 268;
 
+// The road can be drawn two ways, chosen in the settings and kept on this device:
+// "road" is the winding line, "stairs" a staircase with a little man climbing it.
+const ROAD_THEME_KEY = "roadtogoal_road_theme";
+function roadTheme() {
+  try {
+    return localStorage.getItem(ROAD_THEME_KEY) === "stairs" ? "stairs" : "road";
+  } catch (e) {
+    return "road";
+  }
+}
+
+function setRoadTheme(theme) {
+  try {
+    localStorage.setItem(ROAD_THEME_KEY, theme);
+  } catch (e) {}
+  climber.idx = -1; // a new picture: start the man in place, do not walk him across
+  if (lastData) render(lastData, { scrollToCurrent: true });
+}
+
+// stairs: room above the highest step for the man, room below the lowest for the labels
+const STAIRS_TOP = 96;
+const STAIRS_BOTTOM = 150;
+const STAIRS_RISE = 46;
+const TREAD_HALF = STEP_X / 2;
+
+function stairsLayout(count, height) {
+  const room = Math.max(0, height - STAIRS_TOP - STAIRS_BOTTOM);
+  const rise = count > 1 ? Math.max(4, Math.min(STAIRS_RISE, room / (count - 1))) : 0;
+  const used = STAIRS_TOP + STAIRS_BOTTOM + (count - 1) * rise;
+  const lowest = Math.max(0, (height - used) / 2) + STAIRS_TOP + (count - 1) * rise;
+  const points = [];
+  for (let i = 0; i < count; i++) points.push({ x: SIDE_PAD + i * STEP_X, y: lowest - i * rise });
+  return points;
+}
+
+// one tread per step, a riser between them; `upTo` stops in the middle of that step's tread
+function stairsPath(points, upTo) {
+  if (!points.length) return "";
+  const last = upTo === undefined ? points.length - 1 : upTo;
+  let d = `M ${points[0].x - TREAD_HALF} ${points[0].y}`;
+  for (let i = 0; i < last; i++) d += ` H ${points[i].x + TREAD_HALF} V ${points[i + 1].y}`;
+  d += upTo === undefined ? ` H ${points[last].x + TREAD_HALF}` : ` H ${points[last].x}`;
+  return d;
+}
+
 function layout(count, height) {
+  if (roadTheme() === "stairs") return stairsLayout(count, height);
   const centerY = height / 2 - NODE_BLOCK_SHIFT;
   // flatten the wave when the window is short so nodes never spill out of the road
   const amp = Math.max(0, Math.min(AMP, (height - NODE_BLOCK_HEIGHT) / 2));
@@ -640,7 +686,8 @@ function drawTrack(points, reachIndex, animate) {
   svg.setAttribute("height", roadWrap.clientHeight);
   nodesLayer.style.width = width + "px";
 
-  trackBg.setAttribute("d", pathFromPoints(points));
+  const stairs = roadTheme() === "stairs";
+  trackBg.setAttribute("d", stairs ? stairsPath(points) : pathFromPoints(points));
   if (!points.length) {
     trackFill.setAttribute("d", "");
     trackGlow.setAttribute("d", "");
@@ -648,7 +695,7 @@ function drawTrack(points, reachIndex, animate) {
     return;
   }
 
-  const doneD = pathFromPoints(points.slice(0, reachIndex + 1));
+  const doneD = stairs ? stairsPath(points, reachIndex) : pathFromPoints(points.slice(0, reachIndex + 1));
   trackFill.setAttribute("d", doneD);
   trackGlow.setAttribute("d", doneD);
   const len = trackFill.getTotalLength();
@@ -682,6 +729,7 @@ function render(data, opts = {}) {
   progressText.innerHTML = `<b>${doneCount}</b>из ${total}`;
 
   document.getElementById("roadEmpty").hidden = total > 0;
+  roadWrap.classList.toggle("theme-stairs", roadTheme() === "stairs");
   const points = layout(total, roadWrap.clientHeight);
   const firstNotDone = data.subGoals.findIndex((g) => !g.done);
   drawTrack(points, firstNotDone === -1 ? total - 1 : firstNotDone, !!opts.justCompleted);
@@ -724,6 +772,7 @@ function render(data, opts = {}) {
   nodesLayer.appendChild(frag);
 
   if (burstTarget) burst(burstTarget);
+  placeClimber(points, firstNotDone, data);
   const flashIndex = data.subGoals.findIndex((g) => g.id === opts.flashId);
   if (flashIndex !== -1) {
     scrollRoadTo(points[flashIndex].x - roadWrap.clientWidth / 2);
@@ -732,6 +781,65 @@ function render(data, opts = {}) {
   }
   updateNavRail();
   updateDayClock();
+}
+
+/* ---------- the little man on the stairs ---------- */
+
+// 44 x 70 box, feet on the bottom edge. Limbs are separate so they can swing while he walks.
+const CLIMBER_SVG = `
+  <svg viewBox="0 0 44 70" width="44" height="70" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+    <g class="cl-leg cl-leg-b"><path d="M20 42 L31 50 L31 66" stroke-width="7.5"/></g>
+    <g class="cl-arm cl-arm-b"><path d="M24 23 L33 30 L39 29" stroke-width="5.5"/></g>
+    <path d="M24 19 L20 42" stroke-width="9.5"/>
+    <circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/>
+    <g class="cl-leg cl-leg-a"><path d="M20 42 L14 67" stroke-width="7.5"/></g>
+    <g class="cl-arm cl-arm-a"><path d="M24 23 L15 31 L14 41" stroke-width="5.5"/></g>
+    <path class="cl-cheer" d="M24 24 L10 10 M24 24 L39 12" stroke-width="5.5"/>
+  </svg>`;
+
+const climber = { el: null, idx: -1, goal: null, x: 0, y: 0 };
+const CLIMBER_DX = -70; // he stands on the tread, to the left of the step's circle
+
+function placeClimber(points, current, data) {
+  if (roadTheme() !== "stairs" || !points.length) {
+    if (climber.el) climber.el.hidden = true;
+    climber.idx = -1;
+    return;
+  }
+  if (!climber.el) {
+    climber.el = document.createElement("div");
+    climber.el.className = "climber";
+    climber.el.innerHTML = CLIMBER_SVG;
+  }
+  if (climber.el.parentNode !== nodesLayer) nodesLayer.appendChild(climber.el);
+  const el = climber.el;
+  el.hidden = false;
+
+  const finished = current === -1;
+  const idx = finished ? points.length - 1 : current;
+  const x = points[idx].x + CLIMBER_DX - 22;
+  const y = points[idx].y - 3 - 69;
+  el.classList.toggle("win", finished);
+
+  const sameWalk = climber.idx !== -1 && climber.goal === data.activeGoalId && climber.idx !== idx;
+  el.getAnimations().forEach((a) => a.cancel());
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  if (sameWalk && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    // up (or back down) to the next tread in a little hop, legs swinging on the way
+    const from = `translate(${climber.x}px, ${climber.y}px)`;
+    const to = `translate(${x}px, ${y}px)`;
+    const mid = `translate(${(climber.x + x) / 2}px, ${Math.min(climber.y, y) - 30}px)`;
+    el.classList.add("walking");
+    const walk = el.animate([{ transform: from }, { transform: mid, offset: 0.5 }, { transform: to }], {
+      duration: 900,
+      easing: "cubic-bezier(.4, .1, .3, 1)",
+    });
+    walk.onfinish = walk.oncancel = () => el.classList.remove("walking");
+  }
+  climber.idx = idx;
+  climber.goal = data.activeGoalId;
+  climber.x = x;
+  climber.y = y;
 }
 
 const quoteEl = document.getElementById("quote");

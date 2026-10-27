@@ -4125,3 +4125,45 @@ body.local .settings-row .remind-wrap { display: block; }
 .fs-toggle.on { top: auto; left: auto; right: 14px; bottom: 64px; transform: none; width: 42px; height: 42px; min-width: 42px; padding: 0; }
 .fs-toggle.on svg { width: 22px; height: 22px; }
 .fs-toggle span { display: none; }
+
+/* ---------- the road as a staircase ---------- */
+.road-wrap.theme-stairs .track-bg { stroke: rgba(var(--fg), 0.16); stroke-width: 5; stroke-dasharray: none; stroke-linejoin: round; }
+.road-wrap.theme-stairs .track-glow { stroke-width: 11; stroke-linejoin: round; }
+.road-wrap.theme-stairs .track-fill { stroke-width: 4.5; stroke-linejoin: round; }
+.road-wrap.theme-stairs .node-now { display: none; }
+
+.climber { position: absolute; top: 0; left: 0; width: 44px; height: 70px; z-index: 3; color: var(--white); pointer-events: none; filter: drop-shadow(0 0 8px rgba(var(--fg), 0.25)); }
+.climber[hidden] { display: none; }
+.climber svg { display: block; overflow: visible; }
+.cl-leg, .cl-arm { transition: transform 0.35s ease; }
+.cl-leg { transform-origin: 20px 42px; }
+.cl-arm { transform-origin: 24px 23px; }
+.climber:not(.walking):not(.win) svg { animation: climberBreath 3.2s ease-in-out infinite; transform-origin: 22px 69px; }
+@keyframes climberBreath { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.025); } }
+.climber.walking .cl-leg-a { animation: legSwingA 0.3s ease-in-out infinite alternate; }
+.climber.walking .cl-leg-b { animation: legSwingB 0.3s ease-in-out infinite alternate; }
+.climber.walking .cl-arm-a { animation: legSwingB 0.3s ease-in-out infinite alternate; }
+.climber.walking .cl-arm-b { animation: legSwingA 0.3s ease-in-out infinite alternate; }
+@keyframes legSwingA { from { transform: rotate(-32deg); } to { transform: rotate(28deg); } }
+@keyframes legSwingB { from { transform: rotate(28deg); } to { transform: rotate(-32deg); } }
+/* the top: both arms up, a small happy bounce */
+.cl-cheer { display: none; }
+.climber.win .cl-cheer { display: inline; }
+.climber.win .cl-arm { display: none; }
+.climber.win svg { animation: climberCheer 1.1s ease-in-out infinite; }
+@keyframes climberCheer { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@media (prefers-reduced-motion: reduce) { .climber svg, .climber * { animation: none !important; } }
+
+/* the choice of the picture, in the settings */
+.look-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.look-card { display: flex; flex-direction: column; gap: 10px; padding: 12px 12px 14px; border-radius: 14px; border: 1px solid rgba(var(--fg), 0.14); background: rgba(var(--fg), 0.03); color: var(--text-2); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, background-color 0.2s, color 0.2s; }
+.look-card:hover { border-color: rgba(var(--fg), 0.35); color: var(--text); }
+.look-card.on { border-color: var(--c-road); background: rgba(var(--c-road-rgb), 0.1); color: var(--text); }
+.look-card svg { width: 100%; height: 86px; color: var(--text-2); }
+.look-card.on svg { color: var(--white); }
+.look-name { font-size: 14px; font-weight: 600; }
+.look-note { font-size: 12.5px; color: var(--text-3); line-height: 1.4; margin-top: -6px; }
+@media (max-width: 700px) { .look-choices { grid-template-columns: 1fr; } }
+
+/* the "?" has no place on a phone: this comes after the rule that sets its display */
+@media (max-width: 700px) { .help-btn, .help-card { display: none !important; } }

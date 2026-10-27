@@ -186,9 +186,13 @@ function settingsTabs() {
   if (!LOCAL_MODE) tabs.push({ id: "general", name: "Общие", icon: '<circle cx="10" cy="10" r="2.8"/><circle cx="10" cy="10" r="5.6"/><path d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2"/>' });
   const acct = typeof Auth !== "undefined" && Auth.enabled();
   tabs.push({ id: "sync", name: acct ? "Аккаунт" : "Синхронизация", icon: '<path d="M16.5 8A6.5 6.5 0 0 0 4.4 6.2M3.5 12a6.5 6.5 0 0 0 12.1 1.8"/><path d="M4 2.8v3.7h3.7M16 17.2v-3.7h-3.7"/>' });
+  tabs.push({ id: "look", name: "Внешний вид", icon: '<path d="M3 15l4-5 3 3 3-6 4 8"/><circle cx="14.5" cy="5" r="1.6"/>' });
   tabs.push({ id: "about", name: "О приложении", icon: '<circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6.2v.1"/>' });
   return tabs;
 }
+
+const ROAD_PREVIEW = '<svg viewBox="0 0 160 86" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M10 52 C 40 52, 40 30, 70 30 S 100 64, 130 56 S 150 40, 152 38" stroke-width="2" stroke-dasharray="1 6"/><circle cx="10" cy="52" r="6" fill="currentColor" stroke="none"/><circle cx="70" cy="30" r="6" stroke-width="2"/><circle cx="130" cy="56" r="6" stroke-width="2"/></svg>';
+const STAIRS_PREVIEW = '<svg viewBox="0 0 160 86" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M10 76 H44 V58 H78 V40 H112 V22 H150" stroke-width="3.5"/><circle cx="62" cy="30" r="3.6" fill="currentColor" stroke="none"/><path d="M61 36 L60 46 M60 46 L56 56 M60 46 L65 52 L65 57 M61 38 L56 44 M61 38 L66 42" stroke-width="3"/></svg>';
 
 function settingsRowHtml(title, note, control) {
   return `
@@ -204,6 +208,20 @@ function settingsBodyHtml(tab) {
       ${settingsRowHtml("Напоминание", "Раз в день напомнит открыть приложение", reminderControl())}
       ${settingsRowHtml("Запуск с Windows", "Приложение само откроется при включении компьютера", autostartControl())}
     </div>`;
+  }
+  if (tab === "look") {
+    const cur = roadTheme();
+    const card = (id, name, note, preview) => `
+      <button type="button" class="look-card${cur === id ? " on" : ""}" data-act="road-theme" data-theme="${id}">
+        ${preview}
+        <span class="look-name">${name}</span>
+        <span class="look-note">${note}</span>
+      </button>`;
+    return `<div class="set-block"><div class="settings-row"><div class="settings-text"><div class="settings-name">Дорожка к цели</div><div class="settings-note">Как выглядит путь на главном экране</div></div></div>
+      <div class="look-choices">
+        ${card("road", "Дорога", "Извилистая линия, по которой идёшь шаг за шагом", ROAD_PREVIEW)}
+        ${card("stairs", "Лестница", "Человечек поднимается на ступеньку с каждым выполненным шагом", STAIRS_PREVIEW)}
+      </div><div style="height:12px"></div></div>`;
   }
   if (tab === "sync") {
     const acct = typeof Auth !== "undefined" && Auth.enabled();
@@ -407,6 +425,11 @@ goalsPanel.addEventListener("click", async (e) => {
 
   if (act === "settings-close") {
     closeSettings();
+    return;
+  }
+  if (act === "road-theme") {
+    setRoadTheme(el.dataset.theme);
+    renderGoals();
     return;
   }
   if (act === "settings-tab") {
