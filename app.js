@@ -789,7 +789,7 @@ function render(data, opts = {}) {
     el.innerHTML = `
       ${state === "current" ? '<div class="node-now">сейчас</div>' : ""}
       <button class="node-del" title="Удалить шаг">✕</button>
-      ${roadTheme() === "stairs" && (g.done || isFinish) ? `<div class="stair-flag${isFinish ? " big" : ""}${g.done ? " planted" : ""}"><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
+      ${roadTheme() === "stairs" && (g.done || isFinish) ? `<div class="stair-flag${isFinish ? " big" : ""}${g.done ? " planted" : ""}${g.id === opts.justCompleted ? " planting" : ""}"><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
       <div class="node-circle" title="Открыть шаг">
         <span class="node-icon">${escapeHtml(g.reward)}</span>
         ${g.done ? '<div class="node-badge">✓</div>' : ""}
@@ -812,12 +812,15 @@ function render(data, opts = {}) {
   nodesLayer.appendChild(frag);
 
   if (burstTarget) burst(burstTarget);
-  placeClimber(points, firstNotDone, data);
+  // on the stairs a finished step is a little scene: the card goes, a flag is planted, then he climbs
+  const sceneDelay = roadTheme() === "stairs" && opts.justCompleted ? STAIRS_SCENE_DELAY : 0;
+  placeClimber(points, firstNotDone, data, sceneDelay);
+  const scrollTo = (x) => (sceneDelay ? setTimeout(() => scrollRoadTo(x), sceneDelay) : scrollRoadTo(x));
   const flashIndex = data.subGoals.findIndex((g) => g.id === opts.flashId);
   if (flashIndex !== -1) {
-    scrollRoadTo(points[flashIndex].x - roadWrap.clientWidth / 2);
+    scrollTo(points[flashIndex].x - roadWrap.clientWidth / 2);
   } else if (opts.scrollToCurrent && firstNotDone !== -1) {
-    scrollRoadTo(points[firstNotDone].x - roadWrap.clientWidth / 2);
+    scrollTo(points[firstNotDone].x - roadWrap.clientWidth / 2);
   }
   updateNavRail();
   updateDayClock();
@@ -845,10 +848,12 @@ const CLIMBER_SVG = `
     </g>
   </svg>`;
 
-const climber = { el: null, idx: -1, goal: null, x: 0, y: 0 };
+const climber = { el: null, idx: -1, goal: null, x: 0, y: 0, timers: [] };
 const CLIMBER_DX = -66; // he stands on the tread, to the left of the step's circle
 
-function placeClimber(points, current, data) {
+const STAIRS_SCENE_DELAY = 1350; // the card fades, the flag goes in: only then does he move on
+
+function placeClimber(points, current, data, delay = 0) {
   if (roadTheme() !== "stairs" || !points.length) {
     if (climber.el) climber.el.hidden = true;
     climber.idx = -1;
@@ -867,20 +872,42 @@ function placeClimber(points, current, data) {
   const idx = finished ? points.length - 1 : current;
   const x = points[idx].x + CLIMBER_DX - 22;
   const y = points[idx].y - 3 - 69;
-  el.classList.toggle("win", finished);
+
+  climber.timers.forEach(clearTimeout);
+  climber.timers = [];
+  el.getAnimations().forEach((a) => a.cancel());
+  el.classList.remove("walking", "planting");
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // the arms go up only once the flag is in the ground
+  if (finished && delay && !calm) {
+    el.classList.remove("win");
+    el.classList.add("planting");
+    climber.timers.push(setTimeout(() => el.classList.remove("planting"), delay));
+    climber.timers.push(setTimeout(() => el.classList.add("win"), delay));
+  } else {
+    el.classList.toggle("win", finished);
+  }
 
   const sameWalk = climber.idx !== -1 && climber.goal === data.activeGoalId && climber.idx !== idx;
-  el.getAnimations().forEach((a) => a.cancel());
-  el.style.transform = `translate(${x}px, ${y}px)`;
-  if (sameWalk && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    // up (or back down) to the next tread in a little hop, legs swinging on the way
+  if (sameWalk && !calm) {
+    // stamp the flag in, wait a beat, then up (or back down) in a hop with the legs swinging
     const from = `translate(${climber.x}px, ${climber.y}px)`;
     const to = `translate(${x}px, ${y}px)`;
-    const mid = `translate(${(climber.x + x) / 2}px, ${Math.min(climber.y, y) - 30}px)`;
-    el.classList.add("walking");
+    const mid = `translate(${(climber.x + x) / 2}px, ${Math.min(climber.y, y) - 34}px)`;
+    if (delay) {
+      el.classList.add("planting");
+      climber.timers.push(setTimeout(() => el.classList.remove("planting"), delay));
+      climber.timers.push(setTimeout(() => el.classList.add("walking"), delay));
+    } else {
+      el.classList.add("walking");
+    }
     const walk = el.animate([{ transform: from }, { transform: mid, offset: 0.5 }, { transform: to }], {
-      duration: 900,
-      easing: "cubic-bezier(.4, .1, .3, 1)",
+      duration: 1500,
+      delay,
+      fill: "both",
+      easing: "cubic-bezier(.45, .05, .25, 1)",
     });
     walk.onfinish = walk.oncancel = () => el.classList.remove("walking");
   }

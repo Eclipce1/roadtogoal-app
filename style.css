@@ -4179,7 +4179,8 @@ body.local .settings-row .remind-wrap { display: block; }
 
 .stair-flag { position: absolute; left: 122px; top: 2px; width: 22px; height: 36px; color: var(--g1); pointer-events: none; }
 .stair-flag.planted { color: var(--white); }
-.stair-flag.big { transform: scale(1.5); transform-origin: 3px 35px; }
+.stair-flag { --fs: 1; transform: scale(var(--fs)); transform-origin: 3px 35px; }
+.stair-flag.big { --fs: 1.5; }
 .stair-flag-svg { display: block; overflow: visible; }
 .flag-cloth { transform-box: fill-box; transform-origin: 0 50%; animation: flagWave 1.8s ease-in-out infinite; }
 @keyframes flagWave { 0%, 100% { transform: scaleX(1) skewY(0deg); } 50% { transform: scaleX(0.82) skewY(5deg); } }
@@ -4214,3 +4215,9 @@ body.local .settings-row .remind-wrap { display: block; }
   body.road-stairs .topbar, body.road-stairs .why-hero { z-index: 4; }
   body.road-stairs .road-area { margin-top: -56px; }
 }
+
+/* planting the flag: it rises out of the step once the card has gone, and the man stamps it in */
+.stair-flag.planting { animation: flagPlant 0.9s cubic-bezier(.3, 1.35, .5, 1) 0.45s both; }
+@keyframes flagPlant { 0% { transform: scale(var(--fs)) scaleY(0); opacity: 0; } 25% { opacity: 1; } 100% { transform: scale(var(--fs)) scaleY(1); opacity: 1; } }
+.climber.planting:not(.walking) svg { animation: climberPlant 0.8s ease-in-out 0.3s both; transform-origin: 22px 69px; }
+@keyframes climberPlant { 0%, 100% { transform: translateY(0) rotate(0deg); } 35% { transform: translateY(5px) rotate(7deg); } 60% { transform: translateY(1px) rotate(-2deg); } }
