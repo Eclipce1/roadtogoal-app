@@ -275,7 +275,7 @@ function goalsMainHtml() {
           <button type="button" data-act="mode" data-mode="graph" class="${goalsMode === "graph" ? "on" : ""}">Граф</button>
           <button type="button" data-act="mode" data-mode="list" class="${goalsMode === "list" ? "on" : ""}">Список</button>
         </div>
-        <button type="button" class="goals-new-btn" data-act="new">+ Новая цель</button>
+        <button type="button" class="goals-new-btn" data-act="new" title="Новая цель">+<span class="new-txt"> Новая цель</span></button>
       </div>
     </div>
     ${body}`;

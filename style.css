@@ -4049,12 +4049,17 @@ body.local .settings-row .remind-wrap { display: block; }
 @media (min-width: 1400px) {
   .goals-panel.has-sec-bar .goals-top { position: absolute; top: 24px; right: 270px; left: auto; padding: 0; margin: 0; }
 }
-/* a window that is not full-screen: the same place, between the name and the clock, just a bit tighter */
-@media (min-width: 1100px) and (max-width: 1399px) {
-  .goals-panel.has-sec-bar .goals-top { position: absolute; top: 24px; right: 232px; left: auto; padding: 0; margin: 0; }
-  .goals-panel.has-sec-bar .goals-tools { gap: 8px; }
-  .goals-panel.has-sec-bar .goals-tools .seg button { padding: 7px 12px; font-size: 13px; }
-  .goals-panel.has-sec-bar .goals-new-btn { padding: 9px 15px; font-size: 13.5px; }
+/* a window that is not full-screen: the same place, between the name and the clock, with smaller buttons */
+@media (min-width: 880px) and (max-width: 1399px) {
+  .goals-panel.has-sec-bar .goals-top { position: absolute; top: 24px; right: 224px; left: auto; padding: 0; margin: 0; }
+  .goals-panel.has-sec-bar .goals-tools { gap: 6px; }
+  .goals-panel.has-sec-bar .goals-tools .seg button { padding: 5px 10px; font-size: 12px; }
+  .goals-panel.has-sec-bar .goals-new-btn { padding: 7px 12px; font-size: 12px; }
+}
+/* narrower still: the new-goal button shrinks to a plus */
+@media (min-width: 880px) and (max-width: 1049px) {
+  .goals-panel.has-sec-bar .goals-new-btn { width: 30px; height: 30px; padding: 0; font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  .goals-panel.has-sec-bar .goals-new-btn .new-txt { display: none; }
 }
 .settings-page .settings-title { display: none; }
 
