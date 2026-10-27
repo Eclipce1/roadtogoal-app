@@ -12,6 +12,7 @@ let goalsSection = "goals"; // "day" | "goals" | "plan" | "study" | "settings" �
 // the tab you were last in is remembered on this device, so the next start can open right there
 const LAST_TAB_KEY = "roadtogoal_last_tab";
 function rememberTab(name) {
+  if (name === "settings") return; // a window you step into, not a place to start from
   try {
     localStorage.setItem(LAST_TAB_KEY, name);
   } catch (e) {}
@@ -58,7 +59,14 @@ navRail.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-nav]");
   if (!btn) return;
   navRail.classList.remove("open");
-  if (btn.dataset.nav === "road") closeGoals();
+  if (btn.dataset.nav === "settings") {
+    const open = goalsEl.classList.contains("open");
+    if (open && goalsSection === "settings") closeSettings();
+    else {
+      settingsFrom = open ? goalsSection : "road";
+      openGoals("settings");
+    }
+  } else if (btn.dataset.nav === "road") closeGoals();
   else openGoals(btn.dataset.nav);
 });
 
@@ -168,37 +176,77 @@ function goalRow(g, isFirst, isLast) {
     </div>`;
 }
 
-// the little switches that used to sit in a row at the top now live in one place
-function settingsCardHtml() {
-  const row = (title, note, control) => `
+// "Настройки" is a window of its own: sections on the left, the rows of the chosen one on the right.
+// The gear at the bottom of the side menu opens it; the cross (or Esc) puts you back where you were.
+let settingsTab = "general";
+let settingsFrom = "road"; // the tab to go back to
+
+function settingsTabs() {
+  const tabs = [];
+  if (!LOCAL_MODE) tabs.push({ id: "general", name: "Общие", icon: '<circle cx="10" cy="10" r="2.8"/><circle cx="10" cy="10" r="5.6"/><path d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2"/>' });
+  const acct = typeof Auth !== "undefined" && Auth.enabled();
+  tabs.push({ id: "sync", name: acct ? "Аккаунт" : "Синхронизация", icon: '<path d="M16.5 8A6.5 6.5 0 0 0 4.4 6.2M3.5 12a6.5 6.5 0 0 0 12.1 1.8"/><path d="M4 2.8v3.7h3.7M16 17.2v-3.7h-3.7"/>' });
+  tabs.push({ id: "about", name: "О приложении", icon: '<circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6.2v.1"/>' });
+  return tabs;
+}
+
+function settingsRowHtml(title, note, control) {
+  return `
     <div class="settings-row">
       <div class="settings-text"><div class="settings-name">${title}</div><div class="settings-note">${note}</div></div>
       ${control}
     </div>`;
-  const rows = [];
-  if (!LOCAL_MODE) {
-    rows.push(row("Напоминание", "Раз в день напомнит открыть приложение", reminderControl()));
-    rows.push(row("Запуск с Windows", "Приложение само откроется при включении компьютера", autostartControl()));
+}
+
+function settingsBodyHtml(tab) {
+  if (tab === "general") {
+    return `<div class="set-block">
+      ${settingsRowHtml("Напоминание", "Раз в день напомнит открыть приложение", reminderControl())}
+      ${settingsRowHtml("Запуск с Windows", "Приложение само откроется при включении компьютера", autostartControl())}
+    </div>`;
   }
-  if (typeof Auth !== "undefined" && Auth.enabled()) rows.push(row("Аккаунт", "Вход и синхронизация", Auth.controlHtml()));
-  else if (typeof Sync !== "undefined") rows.push(row("Синхронизация", "Телефон и компьютер", Sync.controlHtml()));
+  if (tab === "sync") {
+    const acct = typeof Auth !== "undefined" && Auth.enabled();
+    const row = acct
+      ? settingsRowHtml("Аккаунт", "Вход и синхронизация", Auth.controlHtml())
+      : typeof Sync !== "undefined"
+        ? settingsRowHtml("Синхронизация", "Телефон и компьютер", Sync.controlHtml())
+        : "";
+    return `<div class="set-block">${row}</div>`;
+  }
+  return `<div class="set-block">
+    ${settingsRowHtml("RoadToGoal", "Дорожка к цели: шаг за шагом, без спешки", "")}
+    ${settingsRowHtml("Где лежат данные", LOCAL_MODE ? "В этом браузере, на этом устройстве" : "На этом компьютере, в папке приложения", "")}
+  </div>`;
+}
+
+function settingsPageHtml() {
+  const tabs = settingsTabs();
+  if (!tabs.some((t) => t.id === settingsTab)) settingsTab = tabs[0].id;
+  const cur = tabs.find((t) => t.id === settingsTab);
   return `
-    <div class="settings-card">
-      <div class="settings-title">Настройки</div>
-      ${rows.join("")}
+    <div class="set-win">
+      <button type="button" class="set-x" data-act="settings-close" aria-label="Закрыть">✕</button>
+      <aside class="set-side">
+        <div class="set-head">Настройки</div>
+        ${tabs
+          .map(
+            (t) => `<button type="button" class="set-tab${t.id === settingsTab ? " on" : ""}" data-act="settings-tab" data-tab="${t.id}">
+          <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>${t.name}</button>`
+          )
+          .join("")}
+      </aside>
+      <section class="set-main">
+        <div class="set-title">${cur.name}</div>
+        ${settingsBodyHtml(settingsTab)}
+      </section>
     </div>`;
 }
 
-// "Настройки" is a screen of its own, opened by the gear at the bottom of the side menu
-function settingsPageHtml() {
-  return `
-    <div class="goals-top">
-      <div>
-        <div class="goals-title">Настройки</div>
-        <div class="goals-sub">Напоминания, запуск и синхронизация</div>
-      </div>
-    </div>
-    <div class="goals-list settings-page">${settingsCardHtml()}</div>`;
+function closeSettings() {
+  goalsSection = settingsFrom;
+  if (settingsFrom === "road") closeGoals();
+  else openGoals(settingsFrom);
 }
 
 function goalsMainHtml() {
@@ -358,6 +406,15 @@ goalsPanel.addEventListener("click", async (e) => {
   const goalEl = el.closest(".tree-goal");
   const goalId = goalEl ? +goalEl.dataset.goal : null;
 
+  if (act === "settings-close") {
+    closeSettings();
+    return;
+  }
+  if (act === "settings-tab") {
+    settingsTab = el.dataset.tab;
+    renderGoals();
+    return;
+  }
   if (act === "theme-switch") {
     toggleTheme();
     renderGoals();
@@ -436,6 +493,8 @@ goalsPanel.addEventListener("change", (e) => {
 });
 
 goalsPanel.addEventListener("mousedown", (e) => {
+  // a press on the dim space around the settings window closes it
+  if (goalsSection === "settings" && e.target === goalsPanel) closeSettings();
   goalsPanel.querySelectorAll(".remind-wrap.open").forEach((wrap) => {
     if (!wrap.contains(e.target)) wrap.classList.remove("open");
   });
@@ -453,7 +512,8 @@ document.addEventListener(
     if (e.key !== "Escape") return;
     const isOpen = (el) => el && el.classList.contains("open");
     if (isOpen(goalsEl)) {
-      if (!isOpen(confirmEl) && !document.querySelector(".remind-wrap.open")) closeGoals();
+      if (goalsSection === "settings" && !isOpen(confirmEl) && !document.querySelector(".remind-wrap.open")) closeSettings();
+      else if (!isOpen(confirmEl) && !document.querySelector(".remind-wrap.open")) closeGoals();
       return;
     }
     if (isOpen(whereMenu)) {
