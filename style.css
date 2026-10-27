@@ -4189,3 +4189,16 @@ body.local .settings-row .remind-wrap { display: block; }
 
 .track-area { opacity: 0.65; }
 .track-area-bg { opacity: 0.2; }
+
+/* stairs want height: on a wide screen the head of the page shrinks to make room for them */
+@media (min-width: 701px) {
+  body.road-stairs .topbar { padding-top: 18px; }
+  body.road-stairs .goal-label { margin-bottom: 4px; }
+  body.road-stairs .goal-title { font-size: 24px; }
+  body.road-stairs .meta-line { margin-top: 8px; }
+  body.road-stairs .why-hero { padding-top: 10px; }
+  body.road-stairs .why-btn { flex-direction: row; align-items: baseline; flex-wrap: wrap; justify-content: center; gap: 4px 14px; padding: 2px 20px; }
+  body.road-stairs .why-text { font-size: 17px; }
+  body.road-stairs .why-empty .why-text { font-size: 15px; }
+  body.road-stairs .why-cta { display: none; }
+}

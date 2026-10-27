@@ -621,9 +621,9 @@ function setRoadTheme(theme) {
 }
 
 // stairs: room above the highest step for the man, room below the lowest for the labels
-const STAIRS_TOP = 118;
-const STAIRS_BOTTOM = 150;
-const STAIRS_RISE = 46;
+const STAIRS_TOP = 100;
+const STAIRS_BOTTOM = 112;
+const STAIRS_RISE = 84;
 
 function stairsLayout(count, height) {
   const room = Math.max(0, height - STAIRS_TOP - STAIRS_BOTTOM);
@@ -642,7 +642,7 @@ const LEAD = 44; // a little level ground before the first and after the last la
 
 function smallStepsCount(points) {
   const rise = points.length > 1 ? points[0].y - points[1].y : 0;
-  return Math.max(1, Math.min(6, Math.round(rise / 5)));
+  return Math.max(1, Math.min(9, Math.round(rise / 5.5)));
 }
 
 function stairsPath(points, upTo) {
@@ -708,7 +708,7 @@ function ensureTrackPaths() {
   trackFill = svg.querySelector(".track-fill");
 }
 
-function drawTrack(points, reachIndex, animate) {
+function drawTrack(points, reachIndex, animate, finished) {
   ensureTrackPaths();
   const width = points.length ? points[points.length - 1].x + SIDE_PAD : 0;
   svg.setAttribute("width", width);
@@ -728,11 +728,11 @@ function drawTrack(points, reachIndex, animate) {
     return;
   }
 
-  const doneD = stairs ? stairsPath(points, reachIndex) : pathFromPoints(points.slice(0, reachIndex + 1));
+  const doneD = stairs ? stairsPath(points, finished ? undefined : reachIndex) : pathFromPoints(points.slice(0, reachIndex + 1));
   if (stairs) {
     const bottom = roadWrap.clientHeight;
     trackAreaBg.setAttribute("d", stairsArea(points, undefined, bottom));
-    trackArea.setAttribute("d", stairsArea(points, reachIndex, bottom));
+    trackArea.setAttribute("d", stairsArea(points, finished ? undefined : reachIndex, bottom));
   }
   trackFill.setAttribute("d", doneD);
   trackGlow.setAttribute("d", doneD);
@@ -768,9 +768,10 @@ function render(data, opts = {}) {
 
   document.getElementById("roadEmpty").hidden = total > 0;
   roadWrap.classList.toggle("theme-stairs", roadTheme() === "stairs");
+  document.body.classList.toggle("road-stairs", roadTheme() === "stairs");
   const points = layout(total, roadWrap.clientHeight);
   const firstNotDone = data.subGoals.findIndex((g) => !g.done);
-  drawTrack(points, firstNotDone === -1 ? total - 1 : firstNotDone, !!opts.justCompleted);
+  drawTrack(points, firstNotDone === -1 ? total - 1 : firstNotDone, !!opts.justCompleted, total > 0 && firstNotDone === -1);
 
   nodesLayer.querySelectorAll(".node").forEach((n) => n.remove());
   const frag = document.createDocumentFragment();
