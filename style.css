@@ -4225,3 +4225,11 @@ body.local .settings-row .remind-wrap { display: block; }
 /* the arm that holds the flag swings only a little, so the flag stays upright */
 @keyframes armSwingA { from { transform: rotate(-10deg); } to { transform: rotate(8deg); } }
 @keyframes armSwingB { from { transform: rotate(14deg); } to { transform: rotate(-14deg); } }
+
+/* going back: he turns round, and the flag he takes up folds into the ground */
+.cl-flip { width: 44px; height: 70px; }
+.climber.back .cl-flip { transform: scaleX(-1); }
+.stair-flag.lifting { animation: flagLift 0.5s ease-in both; }
+@keyframes flagLift { 0% { transform: scale(var(--fs)) scaleY(1); opacity: 1; } 100% { transform: scale(var(--fs)) scaleY(0); opacity: 0; } }
+
+.node:not(.done):not(.finish) .stair-flag.lifting { display: block; }

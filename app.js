@@ -777,8 +777,12 @@ function render(data, opts = {}) {
   roadWrap.classList.toggle("theme-stairs", roadTheme() === "stairs");
   document.body.classList.toggle("road-stairs", roadTheme() === "stairs");
   const points = layout(total, roadWrap.clientHeight);
+  const undoPlan = roadTheme() === "stairs" && opts.justReset && opts.justReset.length ? planUndo(points, data, opts.justReset) : null;
   const firstNotDone = data.subGoals.findIndex((g) => !g.done);
-  drawTrack(points, firstNotDone === -1 ? total - 1 : firstNotDone, !!opts.justCompleted, total > 0 && firstNotDone === -1);
+  // walking back, the stairs stay lit as they were until he has taken the flags up
+  const litFin = undoPlan ? climber.fin : total > 0 && firstNotDone === -1;
+  const litReach = undoPlan ? climber.idx : firstNotDone === -1 ? total - 1 : firstNotDone;
+  drawTrack(points, litReach, !!opts.justCompleted, litFin);
 
   nodesLayer.querySelectorAll(".node").forEach((n) => n.remove());
   const frag = document.createDocumentFragment();
@@ -796,7 +800,8 @@ function render(data, opts = {}) {
     el.innerHTML = `
       ${state === "current" ? '<div class="node-now">сейчас</div>' : ""}
       <button class="node-del" title="Удалить шаг">✕</button>
-      ${roadTheme() === "stairs" && (g.done || isFinish) ? `<div class="stair-flag${isFinish ? " big" : ""}${g.done ? " planted" : ""}${g.id === opts.justCompleted ? " planting" : ""}"${g.id === opts.justCompleted ? ` style="animation-delay:${FLAG_DELAY}ms"` : ""}><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
+      ${roadTheme() === "stairs" && isFinish && undoPlan && undoPlan.liftAt[g.id] !== undefined ? `<div class="stair-flag big"><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
+      ${roadTheme() === "stairs" && (g.done || isFinish || (undoPlan && undoPlan.liftAt[g.id] !== undefined)) ? `<div class="stair-flag${isFinish ? " big" : ""}${g.done || (undoPlan && undoPlan.liftAt[g.id] !== undefined) ? " planted" : ""}${g.id === opts.justCompleted ? " planting" : ""}${undoPlan && undoPlan.liftAt[g.id] !== undefined ? " lifting" : ""}"${g.id === opts.justCompleted ? ` style="animation-delay:${FLAG_DELAY}ms"` : undoPlan && undoPlan.liftAt[g.id] !== undefined ? ` style="animation-delay:${undoPlan.liftAt[g.id]}ms"` : ""}><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
       <div class="node-circle" title="Открыть шаг">
         <span class="node-icon">${escapeHtml(g.reward)}</span>
         ${g.done ? '<div class="node-badge">✓</div>' : ""}
@@ -821,7 +826,8 @@ function render(data, opts = {}) {
   if (burstTarget) burst(burstTarget);
   // on the stairs a finished step is a little scene (see placeClimber): the road scrolls when he sets off
   const scene = roadTheme() === "stairs" && !!opts.justCompleted;
-  placeClimber(points, firstNotDone, data, opts.justCompleted);
+  placeClimber(points, firstNotDone, data, opts.justCompleted, undoPlan);
+  if (undoPlan) setTimeout(() => scrollRoadTo(points[undoPlan.from].x - roadWrap.clientWidth / 2), CARD_WAIT);
   const scrollTo = (x) => (scene ? setTimeout(() => scrollRoadTo(x), STAIRS_WALK_START) : scrollRoadTo(x));
   const flashIndex = data.subGoals.findIndex((g) => g.id === opts.flashId);
   if (flashIndex !== -1) {
@@ -855,7 +861,7 @@ const CLIMBER_SVG = `
     </g>
   </svg>`;
 
-const climber = { el: null, idx: -1, goal: null, px: 0, py: 0, timers: [], lit: null };
+const climber = { el: null, idx: -1, goal: null, fin: false, px: 0, py: 0, timers: [], lit: null };
 const CLIMBER_DX = -56; // where he waits: at the left end of the landing, beside the step's circle
 const FLAG_STAND = 17; // where he stands to plant the flag (the pole is a little further right)
 const FINISH_STAND = 76; // after the last flag he steps beyond it, onto the level ground
@@ -890,7 +896,57 @@ function stairsWalk(points, a, b) {
   return b > a ? pts : pts.reverse();
 }
 
-function placeClimber(points, current, data, completedId) {
+const PICK_STAND = 52; // where he stands to take a flag up: just right of the pole
+const PICK_TIME = 700;
+const LIFT_TIME = 500;
+
+// Undoing a step is the same scene backwards: he turns round, walks back down the stairs to the
+// flag of the step, takes it up, and goes on to where that step begins. Returns null when there is
+// nothing to walk from (first start, another goal): the picture is then simply redrawn.
+function planUndo(points, data, resetIds) {
+  const landings = resetIds.map((id) => data.subGoals.findIndex((g) => g.id === id)).filter((i) => i >= 0).sort((a, b) => b - a);
+  if (!landings.length || climber.idx === -1 || climber.goal !== data.activeGoalId || climber.idx < landings[landings.length - 1]) return null;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+
+  const from = landings[landings.length - 1];
+  const tl = [{ t: 0, x: climber.px, y: climber.py }];
+  const marks = [];
+  const liftAt = {};
+  const last = () => tl[tl.length - 1];
+  const hold = (ms) => tl.push({ t: last().t + ms, x: last().x, y: last().y });
+  const go = (p, ms, bob = 0) => {
+    const prev = last();
+    if (bob) tl.push({ t: prev.t + ms / 2, x: (prev.x + p.x) / 2, y: Math.min(prev.y, p.y) - bob });
+    tl.push({ t: prev.t + ms, x: p.x, y: p.y });
+  };
+  const walkLine = (p) => {
+    if (Math.abs(p.x - last().x) < 2 && Math.abs(p.y - last().y) < 2) return;
+    go(p, Math.max(140, (Math.abs(p.x - last().x) / FLAT_SPEED) * 1000));
+  };
+
+  hold(CARD_WAIT);
+  marks.push([last().t, "back", true], [last().t, "walking", true]);
+  let cur = climber.idx;
+  landings.forEach((j) => {
+    if (cur > j) {
+      walkLine(standAt(points, cur, false));
+      stairsWalk(points, cur, j).forEach((p) => go(p, STEP_TIME, 5));
+    }
+    walkLine({ x: points[j].x + PICK_STAND, y: points[j].y });
+    marks.push([last().t, "walking", false], [last().t, "planting", true]);
+    liftAt[data.subGoals[j].id] = last().t + 120;
+    hold(PICK_TIME);
+    marks.push([last().t, "planting", false], [last().t, "walking", true]);
+    cur = j;
+  });
+  walkLine(standAt(points, from, false));
+  marks.push([last().t, "walking", false], [last().t, "back", false]);
+
+  const startX = climber.fin ? points[points.length - 1].x + LANDING_HALF + LEAD : points[climber.idx].x;
+  return { tl, marks, liftAt, from, startX, endX: points[from].x };
+}
+
+function placeClimber(points, current, data, completedId, undoPlan) {
   if (roadTheme() !== "stairs" || !points.length) {
     if (climber.el) climber.el.hidden = true;
     climber.idx = -1;
@@ -899,7 +955,7 @@ function placeClimber(points, current, data, completedId) {
   if (!climber.el) {
     climber.el = document.createElement("div");
     climber.el.className = "climber";
-    climber.el.innerHTML = CLIMBER_SVG;
+    climber.el.innerHTML = `<div class="cl-flip">${CLIMBER_SVG}</div>`;
   }
   if (climber.el.parentNode !== nodesLayer) nodesLayer.appendChild(climber.el);
   const el = climber.el;
@@ -915,7 +971,7 @@ function placeClimber(points, current, data, completedId) {
   if (climber.lit) climber.lit.cancel();
   climber.lit = null;
   el.getAnimations().forEach((a) => a.cancel());
-  el.classList.remove("walking", "planting");
+  el.classList.remove("walking", "planting", "back");
   el.classList.toggle("win", finished);
   el.style.transform = place(at);
 
@@ -923,13 +979,13 @@ function placeClimber(points, current, data, completedId) {
   const sameGoal = climber.idx !== -1 && climber.goal === data.activeGoalId;
   const doneIdx = completedId ? data.subGoals.findIndex((g) => g.id === completedId) : -1;
   const scene = sameGoal && doneIdx !== -1 && climber.idx === doneIdx;
-  const walkOnly = sameGoal && !scene && climber.idx !== idx;
+  const walkOnly = sameGoal && !scene && !undoPlan && climber.idx !== idx;
 
-  if (!calm && (scene || walkOnly)) {
+  if (!calm && (scene || walkOnly || undoPlan)) {
     // a timeline of where he is and when; `marks` switch the poses on and off along the way
     const from = { x: climber.px, y: climber.py };
-    const tl = [{ t: 0, ...from }];
-    const marks = [];
+    let tl = [{ t: 0, ...from }];
+    let marks = [];
     const last = () => tl[tl.length - 1];
     const hold = (ms) => tl.push({ t: last().t + ms, x: last().x, y: last().y });
     const go = (p, ms, bob = 0) => {
@@ -940,7 +996,10 @@ function placeClimber(points, current, data, completedId) {
     const walkLine = (p) => go(p, Math.max(140, (Math.abs(p.x - last().x) / FLAT_SPEED) * 1000));
     const climb = (path) => path.forEach((p) => go(p, STEP_TIME, 5));
 
-    if (scene) {
+    if (undoPlan) {
+      tl = undoPlan.tl;
+      marks = undoPlan.marks;
+    } else if (scene) {
       hold(CARD_WAIT);
       marks.push([last().t, "walking", true]);
       walkLine({ x: points[doneIdx].x + FLAG_STAND, y: points[doneIdx].y });
@@ -964,8 +1023,15 @@ function placeClimber(points, current, data, completedId) {
       marks.push([last().t, "walking", false]);
     }
 
-    const total = last().t;
-    if (scene && litRect) {
+    const total = tl[tl.length - 1].t;
+    if (undoPlan && litRect) {
+      // going back, the lit trail is taken in behind him
+      const { startX, endX } = undoPlan;
+      const whole = total + 200;
+      const frames = tl.map((f) => ({ width: `${Math.min(startX, Math.max(endX, f.x + 10))}px`, offset: f.t / whole }));
+      frames.push({ width: `${endX}px`, offset: 1 });
+      climber.lit = litRect.animate(frames, { duration: whole, fill: "both", easing: "linear" });
+    } else if (scene && litRect) {
       // the glowing trail grows behind him: its front edge is where he is, then it settles under the step
       const startX = points[doneIdx].x;
       const endX = finished ? points[points.length - 1].x + LANDING_HALF + LEAD : points[idx].x;
@@ -978,7 +1044,7 @@ function placeClimber(points, current, data, completedId) {
       tl.map((f) => ({ transform: place(f), offset: f.t / total })),
       { duration: total, fill: "both", easing: "linear" }
     );
-    walk.onfinish = () => el.classList.remove("walking", "planting");
+    walk.onfinish = () => el.classList.remove("walking", "planting", "back");
     marks.forEach(([t, cls, on]) => {
       const apply = () => el.classList.toggle(cls, on);
       if (t <= 0) apply();
@@ -986,6 +1052,7 @@ function placeClimber(points, current, data, completedId) {
     });
   }
   climber.idx = idx;
+  climber.fin = finished;
   climber.goal = data.activeGoalId;
   climber.px = at.x;
   climber.py = at.y;
