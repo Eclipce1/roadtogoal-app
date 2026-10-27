@@ -203,7 +203,9 @@ const Graph = (() => {
       minY = Math.min(minY, n.y - 30);
       maxY = Math.max(maxY, n.y + 50);
     });
-    const topPad = 110;
+    // the title and the list/new-goal buttons sit over the top of the graph: keep clear of them
+    const tools = svg.closest(".goals-panel")?.querySelector(".goals-tools");
+    const topPad = tools ? Math.max(110, tools.getBoundingClientRect().bottom - svg.getBoundingClientRect().top + 24) : 110;
     const k = Math.min(1.35, (w - 60) / (maxX - minX), (h - topPad - 60) / (maxY - minY));
     return {
       k,
