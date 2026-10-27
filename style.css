@@ -4031,3 +4031,22 @@ body.local .settings-row .remind-wrap { display: block; }
 @media (max-width: 700px) { .settings-card { top: 150px; right: 12px; left: 12px; width: auto; } }
 .settings-card { position: relative; top: auto; right: auto; margin: 8px 28px 12px auto; flex-shrink: 0; }
 @media (max-width: 700px) { .settings-card { top: auto; right: auto; left: auto; margin: 8px 12px 12px; width: auto; } }
+
+/* ---------- the gear at the bottom of the menu, and the settings screen ---------- */
+.nav-settings { margin-top: auto; }
+.goals-nav-btn[data-nav="settings"].on { background: rgba(var(--fg), 0.12); color: var(--text); }
+.settings-page { max-width: 620px; }
+.settings-page .settings-card { position: relative; top: auto; right: auto; width: 100%; margin: 14px auto 0; box-shadow: none; }
+.sec-bar[data-sec="settings"] { --sec: var(--text-2); --sec-rgb: 161, 161, 170; }
+@media (max-width: 700px) {
+  .nav-rail .nav-settings { flex: 0 0 52px; margin-top: 0; padding-left: 0; padding-right: 0; }
+  .nav-rail .nav-settings span { display: none; }
+}
+
+/* the tools of a tab (list / graph, new goal …) sit level with its name on a wide screen,
+   and directly under it on a narrower one */
+.goals-panel.has-sec-bar .goals-top { justify-content: center; padding: 0 24px; margin-top: -2px; }
+@media (min-width: 1400px) {
+  .goals-panel.has-sec-bar .goals-top { position: absolute; top: 24px; right: 270px; left: auto; padding: 0; margin: 0; }
+}
+.settings-page .settings-title { display: none; }

@@ -6,7 +6,7 @@ const goalsPanel = goalsEl.querySelector(".goals-panel");
 const expandedGoals = new Set();
 // the constellation is too small to read on a phone; there the list is the way in
 let goalsMode = window.matchMedia("(max-width: 700px)").matches ? "list" : "graph";
-let goalsSection = "goals"; // "day" | "goals" | "plan" | "study" — the nav-rail tabs
+let goalsSection = "goals"; // "day" | "goals" | "plan" | "study" | "settings" — the nav-rail tabs
 
 // section is optional: pass it to jump straight to a tab, or omit to keep the current one
 // the tab you were last in is remembered on this device, so the next start can open right there
@@ -168,8 +168,6 @@ function goalRow(g, isFirst, isLast) {
     </div>`;
 }
 
-let goalsSettingsOpen = false;
-
 // the little switches that used to sit in a row at the top now live in one place
 function settingsCardHtml() {
   const row = (title, note, control) => `
@@ -189,6 +187,18 @@ function settingsCardHtml() {
       <div class="settings-title">Настройки</div>
       ${rows.join("")}
     </div>`;
+}
+
+// "Настройки" is a screen of its own, opened by the gear at the bottom of the side menu
+function settingsPageHtml() {
+  return `
+    <div class="goals-top">
+      <div>
+        <div class="goals-title">Настройки</div>
+        <div class="goals-sub">Напоминания, запуск и синхронизация</div>
+      </div>
+    </div>
+    <div class="goals-list settings-page">${settingsCardHtml()}</div>`;
 }
 
 function goalsMainHtml() {
@@ -218,13 +228,8 @@ function goalsMainHtml() {
           <button type="button" data-act="mode" data-mode="list" class="${goalsMode === "list" ? "on" : ""}">Список</button>
         </div>
         <button type="button" class="goals-new-btn" data-act="new">+ Новая цель</button>
-        <button type="button" class="settings-btn${goalsSettingsOpen ? " on" : ""}" data-act="settings-toggle" title="Настройки">
-          <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="1.7" fill="var(--bg)"/><circle cx="13" cy="10" r="1.7" fill="var(--bg)"/><circle cx="8.5" cy="14.5" r="1.7" fill="var(--bg)"/></svg>
-          Настройки
-        </button>
       </div>
     </div>
-    ${goalsSettingsOpen ? settingsCardHtml() : ""}
     ${body}`;
 }
 
@@ -236,7 +241,7 @@ function renderGoals() {
   const scrollTop = oldScroller ? oldScroller.scrollTop : 0;
 
   goalsPanel.innerHTML =
-    goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsSection === "day" ? dayMainHtml() : goalsMainHtml();
+    goalsSection === "plan" ? agendaMainHtml() : goalsSection === "study" ? studyMainHtml() : goalsSection === "day" ? dayMainHtml() : goalsSection === "settings" ? settingsPageHtml() : goalsMainHtml();
   if (goalsSection === "study") studyFit();
   addSectionBar();
   if (goalsSection === "goals" && goalsMode === "graph") Graph.mount(goalsPanel.querySelector(".graph"), lastData);
@@ -358,11 +363,6 @@ goalsPanel.addEventListener("click", async (e) => {
     renderGoals();
     return;
   }
-  if (act === "settings-toggle") {
-    goalsSettingsOpen = !goalsSettingsOpen;
-    renderGoals();
-    return;
-  }
   if (act === "remind-open") {
     el.closest(".remind-wrap").classList.toggle("open");
     return;
@@ -439,11 +439,6 @@ goalsPanel.addEventListener("mousedown", (e) => {
   goalsPanel.querySelectorAll(".remind-wrap.open").forEach((wrap) => {
     if (!wrap.contains(e.target)) wrap.classList.remove("open");
   });
-  // a click anywhere outside the settings card puts it away
-  if (goalsSettingsOpen && !e.target.closest(".settings-card, .settings-btn")) {
-    goalsSettingsOpen = false;
-    renderGoals();
-  }
 });
 
 window.addEventListener("resize", () => {
