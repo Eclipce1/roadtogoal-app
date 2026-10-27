@@ -641,19 +641,23 @@ function stairsLayout(count, height) {
 const LANDING_HALF = 46;
 const LEAD = 44; // a little level ground before the first and after the last landing
 
-function smallStepsCount(points) {
-  const rise = points.length > 1 ? points[0].y - points[1].y : 0;
-  return Math.max(2, Math.min(5, Math.round(rise / 22)));
+// The flight of small stairs that leads up to a step has as many stairs as the step has actions
+// ("how to do it" in its card): think big, act small. A step with no actions gets a few anyway.
+const DEFAULT_STAIRS = 3;
+const MAX_STAIRS = 8;
+function stairsInto(step) {
+  const n = ((step && step.actions) || []).filter((a) => a.text).length;
+  return n ? Math.min(MAX_STAIRS, Math.max(2, n)) : DEFAULT_STAIRS;
 }
 
 function stairsPath(points, upTo) {
   if (!points.length) return "";
   const last = upTo === undefined ? points.length - 1 : upTo;
-  const k = smallStepsCount(points);
   const run = STEP_X - 2 * LANDING_HALF;
   let d = `M ${points[0].x - LANDING_HALF - LEAD} ${points[0].y}`;
   for (let i = 0; i < last; i++) {
     const { x, y } = points[i];
+    const k = points[i + 1].k || DEFAULT_STAIRS;
     d += ` H ${x + LANDING_HALF}`;
     for (let j = 1; j <= k; j++) d += ` V ${y + ((points[i + 1].y - y) * j) / k} H ${x + LANDING_HALF + (run * j) / k}`;
   }
@@ -782,6 +786,7 @@ function render(data, opts = {}) {
   roadWrap.classList.toggle("theme-stairs", roadTheme() === "stairs");
   document.body.classList.toggle("road-stairs", roadTheme() === "stairs");
   const points = layout(total, roadWrap.clientHeight);
+  points.forEach((p, i) => (p.k = stairsInto(data.subGoals[i])));
   const undoPlan = roadTheme() === "stairs" && opts.justReset && opts.justReset.length ? planUndo(points, data, opts.justReset) : null;
   const firstNotDone = data.subGoals.findIndex((g) => !g.done);
   // walking back, the stairs stay lit as they were until he has taken the flags up
@@ -888,12 +893,12 @@ function standAt(points, i, fin) {
 
 // the way along the stairs, tread by tread, from one landing to another (either direction)
 function stairsWalk(points, a, b) {
-  const k = smallStepsCount(points);
   const run = STEP_X - 2 * LANDING_HALF;
   const pts = [];
   for (let i = Math.min(a, b); i < Math.max(a, b); i++) {
     const p0 = points[i];
     const p1 = points[i + 1];
+    const k = p1.k || DEFAULT_STAIRS;
     pts.push({ x: p0.x + LANDING_HALF - 6, y: p0.y });
     for (let j = 1; j <= k; j++) pts.push({ x: p0.x + LANDING_HALF + (run * (j - 0.5)) / k, y: p0.y + ((p1.y - p0.y) * j) / k });
     pts.push({ x: p1.x + CLIMBER_DX, y: p1.y });
