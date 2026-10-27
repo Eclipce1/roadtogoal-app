@@ -4142,8 +4142,8 @@ body.local .settings-row .remind-wrap { display: block; }
 @keyframes climberBreath { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.025); } }
 .climber.walking .cl-leg-a { animation: legSwingA 0.3s ease-in-out infinite alternate; }
 .climber.walking .cl-leg-b { animation: legSwingB 0.3s ease-in-out infinite alternate; }
-.climber.walking .cl-arm-a { animation: legSwingB 0.3s ease-in-out infinite alternate; }
-.climber.walking .cl-arm-b { animation: legSwingA 0.3s ease-in-out infinite alternate; }
+.climber.walking .cl-arm-a { animation: armSwingB 0.3s ease-in-out infinite alternate; }
+.climber.walking .cl-arm-b { animation: armSwingA 0.3s ease-in-out infinite alternate; }
 @keyframes legSwingA { from { transform: rotate(-32deg); } to { transform: rotate(28deg); } }
 @keyframes legSwingB { from { transform: rotate(28deg); } to { transform: rotate(-32deg); } }
 /* the top: both arms up, a small happy bounce */
@@ -4217,7 +4217,11 @@ body.local .settings-row .remind-wrap { display: block; }
 }
 
 /* planting the flag: it rises out of the step once the card has gone, and the man stamps it in */
-.stair-flag.planting { animation: flagPlant 0.9s cubic-bezier(.3, 1.35, .5, 1) 0.45s both; }
+.stair-flag.planting { animation: flagPlant 0.9s cubic-bezier(.3, 1.35, .5, 1) both; }
 @keyframes flagPlant { 0% { transform: scale(var(--fs)) scaleY(0); opacity: 0; } 25% { opacity: 1; } 100% { transform: scale(var(--fs)) scaleY(1); opacity: 1; } }
-.climber.planting:not(.walking) svg { animation: climberPlant 0.8s ease-in-out 0.3s both; transform-origin: 22px 69px; }
+.climber.planting:not(.walking) svg { animation: climberPlant 0.8s ease-in-out 0.1s both; transform-origin: 22px 69px; }
 @keyframes climberPlant { 0%, 100% { transform: translateY(0) rotate(0deg); } 35% { transform: translateY(5px) rotate(7deg); } 60% { transform: translateY(1px) rotate(-2deg); } }
+
+/* the arm that holds the flag swings only a little, so the flag stays upright */
+@keyframes armSwingA { from { transform: rotate(-10deg); } to { transform: rotate(8deg); } }
+@keyframes armSwingB { from { transform: rotate(14deg); } to { transform: rotate(-14deg); } }
