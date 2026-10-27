@@ -7,7 +7,8 @@
 <meta name="theme-color" content="#000000" />
   <script>
     // the chosen theme is set before anything is drawn, so a light page never flashes dark
-    try { var t = localStorage.getItem("roadtogoal_theme"); if (t === "light") { document.documentElement.dataset.theme = "light"; document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f6f3"); } } catch (e) {}
+    // the light theme is switched off: the app is always dark (a saved choice of "light" is dropped)
+    try { localStorage.removeItem("roadtogoal_theme"); } catch (e) {}
   </script>
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />

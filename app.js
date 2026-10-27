@@ -1262,7 +1262,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
   // with a server configured, a visitor first signs in (or chooses to go on without an account)
   if (typeof Auth !== "undefined" && Auth.enabled() && !Auth.signedIn() && !Auth.skipped()) await Auth.showScreen("login");
-  setupThemeToggle();
   // The welcome with its choice of tabs appears once a day. Later starts the same day go
   // straight back to the tab that was open last.
   const GREETED_KEY = "roadtogoal_greeted_on";

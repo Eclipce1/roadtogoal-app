@@ -192,7 +192,6 @@ function goalsMainHtml() {
       <div class="goals-tools">
         ${reminderControl()}
         ${autostartControl()}
-        <button type="button" class="remind-btn theme-btn" data-act="theme-switch" title="Светлая / тёмная тема">${currentTheme() === "light" ? "Тёмная тема" : "Светлая тема"}</button>
         ${typeof Auth !== "undefined" ? Auth.controlHtml() : ""}
         ${typeof Sync !== "undefined" ? Sync.controlHtml() : ""}
         <div class="seg">
