@@ -4270,3 +4270,47 @@ body.local .settings-row .remind-wrap { display: block; }
 .fs-toggle:hover svg { transform: scale(1.18); }
 
 @media (prefers-reduced-motion: reduce) { .goals-nav-btn svg *, .help-btn svg { animation: none !important; transition: none !important; } }
+
+/* ---------- what he does while he stands: each plays for a few seconds, now and then ---------- */
+.cl-head { transform-box: fill-box; transform-origin: 50% 100%; }
+.cl-q { opacity: 0; }
+
+/* thinking: the head tilts and question marks float up */
+.climber.idle-think .cl-head { animation: idleHeadTilt 3.2s ease-in-out both; }
+.climber.idle-think .cl-q { animation: idleQ 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.climber.idle-think .cl-q2 { animation-delay: 0.45s; }
+.climber.idle-think .cl-q3 { animation-delay: 0.9s; }
+@keyframes idleHeadTilt { 0%, 100% { transform: rotate(0deg); } 15%, 85% { transform: rotate(-14deg); } 50% { transform: rotate(-8deg); } }
+@keyframes idleQ { 0% { opacity: 0; transform: translateY(5px) scale(0.6); } 30%, 70% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-6px) scale(0.9); } }
+
+/* scratching his head with the free hand */
+.climber.idle-scratch .cl-arm-a { animation: idleScratch 2.7s ease-in-out both; }
+.climber.idle-scratch .cl-head { animation: idleHeadTilt 2.7s ease-in-out both; }
+@keyframes idleScratch {
+  0% { transform: rotate(0deg); } 14% { transform: rotate(128deg); } 22% { transform: rotate(140deg); } 30% { transform: rotate(122deg); }
+  38% { transform: rotate(140deg); } 46% { transform: rotate(122deg); } 54% { transform: rotate(140deg); } 62% { transform: rotate(122deg); }
+  70% { transform: rotate(135deg); } 82% { transform: rotate(128deg); } 100% { transform: rotate(0deg); }
+}
+
+/* waving the flag */
+.climber.idle-wave .cl-arm-b { animation: idleWave 2.5s ease-in-out both; }
+@keyframes idleWave {
+  0% { transform: rotate(0deg); } 14% { transform: rotate(-16deg); } 28% { transform: rotate(6deg); } 42% { transform: rotate(-16deg); }
+  56% { transform: rotate(6deg); } 70% { transform: rotate(-16deg); } 100% { transform: rotate(0deg); }
+}
+
+/* a good stretch, both arms up */
+.climber.idle-stretch .cl-cheer { display: inline; }
+.climber.idle-stretch .cl-arm { display: none; }
+.climber.idle-stretch:not(.walking):not(.win) svg { animation: idleStretch 2.1s ease-in-out both; transform-origin: 22px 69px; }
+@keyframes idleStretch { 0%, 100% { transform: scale(1, 1); } 30%, 70% { transform: scale(0.97, 1.07); } }
+
+/* shifting from foot to foot, looking about */
+.climber.idle-sway:not(.walking):not(.win) svg { animation: idleSway 3s ease-in-out both; transform-origin: 22px 69px; }
+.climber.idle-sway .cl-head { animation: idleLook 3s ease-in-out both; }
+@keyframes idleSway { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@keyframes idleLook { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2.5px); } 75% { transform: translateX(2.5px); } }
+
+/* a little hop on the spot */
+.climber.idle-hop:not(.walking):not(.win) svg { animation: idleHop 1.8s ease-in-out both; transform-origin: 22px 69px; }
+@keyframes idleHop { 0%, 100% { transform: translateY(0) scale(1, 1); } 12% { transform: translateY(0) scale(1.05, 0.93); } 28% { transform: translateY(-9px) scale(0.97, 1.04); } 44% { transform: translateY(0) scale(1.05, 0.93); } 60% { transform: translateY(-6px) scale(0.98, 1.03); } 76% { transform: translateY(0) scale(1.04, 0.95); } }

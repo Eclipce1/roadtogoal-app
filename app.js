@@ -901,7 +901,10 @@ const CLIMBER_SVG = `
       <path class="flag-cloth" d="M37.5 -3 L54 2.5 L37.5 9Z" fill="#4ade80" stroke="none"/>
     </g>
     <path d="M24 19 L20 42" stroke-width="9.5"/>
-    <circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/>
+    <g class="cl-head"><circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/></g>
+    <g class="cl-qs" fill="currentColor" stroke="none" font-weight="700" font-size="10">
+      <text class="cl-q cl-q1" x="7" y="-1">?</text><text class="cl-q cl-q2" x="23" y="-9">?</text><text class="cl-q cl-q3" x="36" y="-2">?</text>
+    </g>
     <g class="cl-leg cl-leg-a"><path d="M20 42 L14 67" stroke-width="7.5"/></g>
     <g class="cl-arm cl-arm-a"><path d="M24 23 L15 31 L14 41" stroke-width="5.5"/></g>
     <g class="cl-cheer">
@@ -912,6 +915,24 @@ const CLIMBER_SVG = `
   </svg>`;
 
 const climber = { el: null, state: null, goal: null, px: 0, py: 0, timers: [], lit: null };
+
+// While he stands still he does something now and then, never the same twice in a row.
+const IDLE_MOVES = { think: 3200, scratch: 2700, wave: 2500, stretch: 2100, sway: 3000, hop: 1800 };
+let idleLast = "";
+function climberIdleTick() {
+  const el = climber.el;
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const walking = el && el.getAnimations().some((a) => a.playState === "running");
+  const busy = !el || el.hidden || calm || document.hidden || walking || /\b(walking|planting|back|win)\b/.test(el.className) || goalsEl.classList.contains("open");
+  if (!busy) {
+    const kinds = Object.keys(IDLE_MOVES).filter((k) => k !== idleLast);
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    idleLast = kind;
+    el.classList.add("idle-" + kind);
+    climber.timers.push(setTimeout(() => el.classList.remove("idle-" + kind), IDLE_MOVES[kind]));
+  }
+  setTimeout(climberIdleTick, 3500 + Math.random() * 3500);
+}
 
 const FLAG_STAND = 17; // where he stands to plant a flag (the pole is a little further right)
 const FINISH_STAND = 76; // after the last flag he steps beyond it, onto the level ground
@@ -1053,6 +1074,7 @@ function placeClimber(points, W, data, st, climb) {
     climber.el = document.createElement("div");
     climber.el.className = "climber";
     climber.el.innerHTML = `<div class="cl-flip">${CLIMBER_SVG}</div>`;
+    setTimeout(climberIdleTick, 3000);
   }
   if (climber.el.parentNode !== nodesLayer) nodesLayer.appendChild(climber.el);
   const el = climber.el;
@@ -1067,7 +1089,7 @@ function placeClimber(points, W, data, st, climb) {
   if (climber.lit) climber.lit.cancel();
   climber.lit = null;
   el.getAnimations().forEach((a) => a.cancel());
-  el.classList.remove("walking", "planting", "back");
+  el.classList.remove("walking", "planting", "back", ...Object.keys(IDLE_MOVES).map((k) => "idle-" + k));
   el.classList.toggle("win", st.fin && !(plan && plan.mode === "complete"));
   el.style.transform = place(at);
 
