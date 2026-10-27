@@ -253,6 +253,15 @@ function refreshActionsCounter() {
   if (el) el.textContent = `${acts.filter((a) => a.done).length}/${acts.length}`;
 }
 
+// on the stairs the man climbs as actions are ticked: show the card's actions on the road at once
+function syncRoadFromCard() {
+  if (!card || roadTheme() !== "stairs") return;
+  const step = lastData.subGoals.find((g) => g.id === card.id);
+  if (!step) return;
+  step.actions = card.step.actions.filter((a) => a.text.trim()).map((a) => ({ text: a.text.trim(), done: a.done, icon: a.icon || "" }));
+  render(lastData);
+}
+
 function scheduleCardSave() {
   clearTimeout(cardSaveTimer);
   cardSaveTimer = setTimeout(saveStepCard, 400);
@@ -299,6 +308,7 @@ cardPanel.addEventListener("keydown", (e) => {
     renderStepCard();
     cardPanel.querySelector(".act-new").focus();
     scheduleCardSave();
+    syncRoadFromCard();
   } else if (e.target.matches("input, .step-title, .act-text")) {
     e.preventDefault();
     e.target.blur();
@@ -344,10 +354,12 @@ cardPanel.addEventListener("click", async (e) => {
     if (card.step.actions[i].done) tickSound();
     refreshActionsCounter();
     scheduleCardSave();
+    syncRoadFromCard();
   } else if (act === "remove") {
     card.step.actions.splice(i, 1);
     renderStepCard();
     scheduleCardSave();
+    syncRoadFromCard();
   } else if (act === "act-emoji") {
     card.emojiRow = card.emojiRow === i ? null : i;
     renderStepCard();
