@@ -4107,3 +4107,8 @@ body.local .settings-row .remind-wrap { display: block; }
 .help-card dd { margin: 2px 0 0; color: var(--text-2); }
 .help-keys { flex-direction: column; gap: 5px; }
 .help-keys span { line-height: 1.45; }
+
+.help-btn { display: flex; align-items: center; justify-content: center; color: var(--text); }
+
+.help-btn { width: 42px; height: 42px; }
+.help-btn svg { width: 28px; height: 28px; }

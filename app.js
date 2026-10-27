@@ -1324,7 +1324,12 @@ function setupHelpButton() {
   btn.className = "help-btn";
   btn.title = "Подсказка";
   btn.setAttribute("aria-label", "Подсказка");
-  btn.textContent = "?";
+  // a speech bubble with a question mark
+  btn.innerHTML =
+    '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M12 3.4c-4.8 0-8.6 3.2-8.6 7.4 0 2.2 1 4.2 2.8 5.6l-1 3.9 4.2-1.6c.8.2 1.7.3 2.6.3 4.8 0 8.6-3.2 8.6-7.2S16.8 3.4 12 3.4z" stroke-width="1.9"/>' +
+    '<path d="M9.6 9.3a2.4 2.4 0 1 1 3.5 2.1c-.8.5-1.1.9-1.1 1.8" stroke-width="2"/>' +
+    '<circle cx="12" cy="15.9" r="1" fill="currentColor" stroke="none"/></svg>';
   const card = document.createElement("div");
   card.className = "help-card";
   card.hidden = true;
