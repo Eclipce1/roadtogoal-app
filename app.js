@@ -1225,7 +1225,7 @@ function setupFullscreenToggle(startFull) {
     btn.classList.toggle("on", full);
     btn.title = full ? "Свернуть в окно (Esc)" : "На весь экран (F11)";
     btn.innerHTML = full
-      ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v4H3M13 3v4h4M7 17v-4H3M13 17v-4h4"/></svg><span>Свернуть в окно</span>'
+      ? '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v4H3M13 3v4h4M7 17v-4H3M13 17v-4h4"/></svg>'
       : '<svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V3h4M17 7V3h-4M3 13v4h4M17 13v4h-4"/></svg>';
   };
   const toggle = async () => {
@@ -1348,7 +1348,7 @@ function setupHelpButton() {
         ${keys.map(([k, t]) => `<span><kbd>${k}</kbd> ${t}</span>`).join("")}
         <span>Меню слева выезжает, когда подвести курсор к левому краю экрана.</span>
       </div>`;
-    card.classList.toggle("high", !!document.querySelector(".fs-toggle:not(.on)"));
+    card.classList.toggle("high", !!document.querySelector(".fs-toggle"));
     card.hidden = false;
     btn.classList.add("on");
   };

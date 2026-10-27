@@ -4120,3 +4120,8 @@ body.local .settings-row .remind-wrap { display: block; }
 .fs-toggle:not(.on) svg { width: 22px; height: 22px; }
 .fs-toggle.on { color: var(--text); border-color: rgba(var(--fg), 0.3); }
 .help-card.high { bottom: 114px; }
+
+/* full screen on or off, the switch stays in the same place above the "?"; only its picture changes */
+.fs-toggle.on { top: auto; left: auto; right: 14px; bottom: 64px; transform: none; width: 42px; height: 42px; min-width: 42px; padding: 0; }
+.fs-toggle.on svg { width: 22px; height: 22px; }
+.fs-toggle span { display: none; }
