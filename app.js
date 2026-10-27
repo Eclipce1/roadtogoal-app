@@ -902,8 +902,10 @@ const CLIMBER_SVG = `
     </g>
     <path d="M24 19 L20 42" stroke-width="9.5"/>
     <g class="cl-head"><circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/></g>
-    <g class="cl-qs" fill="currentColor" stroke="none" font-weight="700" font-size="10">
-      <text class="cl-q cl-q1" x="7" y="-1">?</text><text class="cl-q cl-q2" x="23" y="-9">?</text><text class="cl-q cl-q3" x="36" y="-2">?</text>
+    <g class="cl-qs" fill="currentColor" stroke="none" font-weight="800" font-size="14" text-anchor="middle">
+      <g transform="translate(6 -1) rotate(-18)"><g class="cl-q cl-q1"><text class="cl-qt">?</text></g></g>
+      <g transform="translate(24 -12)"><g class="cl-q cl-q2"><text class="cl-qt">?</text></g></g>
+      <g transform="translate(42 -3) rotate(18)"><g class="cl-q cl-q3"><text class="cl-qt">?</text></g></g>
     </g>
     <g class="cl-leg cl-leg-a"><path d="M20 42 L14 67" stroke-width="7.5"/></g>
     <g class="cl-arm cl-arm-a"><path d="M24 23 L15 31 L14 41" stroke-width="5.5"/></g>

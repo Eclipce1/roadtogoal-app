@@ -4275,16 +4275,25 @@ body.local .settings-row .remind-wrap { display: block; }
    Each move is one animation that begins and ends in his usual pose and lasts as long as the class
    does (IDLE_MOVES in app.js), so nothing snaps: the pose is eased in, held, and eased out again. */
 .cl-head { transform-box: fill-box; transform-origin: 50% 100%; }
-.cl-q { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.cl-q { opacity: 0; }
 
-/* thinking: the head tilts and holds, question marks float up one after another */
+/* thinking: a hand to the head, the head tilts, and question marks pop up over it one after another,
+   bob a little while he thinks, and fade away together */
 .climber.idle-think .cl-head { animation: idleThinkHead 7.3s ease-in-out both; }
-.climber.idle-think .cl-q { animation: idleQ 1.9s ease-in-out 3 both; }
-.climber.idle-think .cl-q1 { animation-delay: 0.9s; }
-.climber.idle-think .cl-q2 { animation-delay: 1.5s; }
-.climber.idle-think .cl-q3 { animation-delay: 2.1s; }
-@keyframes idleThinkHead { 0% { transform: rotate(0deg); } 14% { transform: rotate(-14deg); } 50% { transform: rotate(-9deg); } 86% { transform: rotate(-14deg); } 100% { transform: rotate(0deg); } }
-@keyframes idleQ { 0% { opacity: 0; transform: translateY(5px) scale(0.6); } 30%, 70% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-6px) scale(0.9); } }
+.climber.idle-think .cl-arm-a { animation: idleThinkArm 7.3s ease-in-out both; }
+.climber.idle-think .cl-q1 { animation: idleQ1 7.3s ease-out both; }
+.climber.idle-think .cl-q2 { animation: idleQ2 7.3s ease-out both; }
+.climber.idle-think .cl-q3 { animation: idleQ3 7.3s ease-out both; }
+.climber.idle-think .cl-qt { animation: idleQBob 1.2s ease-in-out infinite alternate; }
+.climber.idle-think .cl-q2 .cl-qt { animation-delay: -0.4s; }
+.climber.idle-think .cl-q3 .cl-qt { animation-delay: -0.8s; }
+.cl-q, .cl-qt { transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes idleThinkHead { 0% { transform: rotate(0deg); } 12% { transform: rotate(-13deg); } 88% { transform: rotate(-13deg); } 100% { transform: rotate(0deg); } }
+@keyframes idleThinkArm { 0% { transform: rotate(0deg); } 14% { transform: rotate(126deg); } 86% { transform: rotate(126deg); } 100% { transform: rotate(0deg); } }
+@keyframes idleQ1 { 0%, 10% { opacity: 0; transform: scale(0.2); } 16% { opacity: 1; transform: scale(1.25); } 20%, 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes idleQ2 { 0%, 19% { opacity: 0; transform: scale(0.2); } 25% { opacity: 1; transform: scale(1.25); } 29%, 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes idleQ3 { 0%, 28% { opacity: 0; transform: scale(0.2); } 34% { opacity: 1; transform: scale(1.25); } 38%, 88% { opacity: 1; transform: scale(1); } 96%, 100% { opacity: 0; transform: scale(0.8); } }
+@keyframes idleQBob { from { transform: translateY(0) rotate(-3deg); } to { transform: translateY(-3px) rotate(3deg); } }
 
 /* scratching his head with the free hand */
 .climber.idle-scratch .cl-arm-a { animation: idleScratch 6.2s ease-in-out both; }
