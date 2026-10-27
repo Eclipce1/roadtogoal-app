@@ -168,6 +168,29 @@ function goalRow(g, isFirst, isLast) {
     </div>`;
 }
 
+let goalsSettingsOpen = false;
+
+// the little switches that used to sit in a row at the top now live in one place
+function settingsCardHtml() {
+  const row = (title, note, control) => `
+    <div class="settings-row">
+      <div class="settings-text"><div class="settings-name">${title}</div><div class="settings-note">${note}</div></div>
+      ${control}
+    </div>`;
+  const rows = [];
+  if (!LOCAL_MODE) {
+    rows.push(row("Напоминание", "Раз в день напомнит открыть приложение", reminderControl()));
+    rows.push(row("Запуск с Windows", "Приложение само откроется при включении компьютера", autostartControl()));
+  }
+  if (typeof Auth !== "undefined" && Auth.enabled()) rows.push(row("Аккаунт", "Вход и синхронизация", Auth.controlHtml()));
+  else if (typeof Sync !== "undefined") rows.push(row("Синхронизация", "Телефон и компьютер", Sync.controlHtml()));
+  return `
+    <div class="settings-card">
+      <div class="settings-title">Настройки</div>
+      ${rows.join("")}
+    </div>`;
+}
+
 function goalsMainHtml() {
   const goals = lastData.goals;
   const body =
@@ -190,17 +213,18 @@ function goalsMainHtml() {
         <div class="goals-sub">${goals.length} ${plural(goals.length, "цель", "цели", "целей")}</div>
       </div>
       <div class="goals-tools">
-        ${reminderControl()}
-        ${autostartControl()}
-        ${typeof Auth !== "undefined" ? Auth.controlHtml() : ""}
-        ${typeof Sync !== "undefined" ? Sync.controlHtml() : ""}
         <div class="seg">
           <button type="button" data-act="mode" data-mode="graph" class="${goalsMode === "graph" ? "on" : ""}">Граф</button>
           <button type="button" data-act="mode" data-mode="list" class="${goalsMode === "list" ? "on" : ""}">Список</button>
         </div>
         <button type="button" class="goals-new-btn" data-act="new">+ Новая цель</button>
+        <button type="button" class="settings-btn${goalsSettingsOpen ? " on" : ""}" data-act="settings-toggle" title="Настройки">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/><circle cx="7" cy="5.5" r="1.7" fill="var(--bg)"/><circle cx="13" cy="10" r="1.7" fill="var(--bg)"/><circle cx="8.5" cy="14.5" r="1.7" fill="var(--bg)"/></svg>
+          Настройки
+        </button>
       </div>
     </div>
+    ${goalsSettingsOpen ? settingsCardHtml() : ""}
     ${body}`;
 }
 
@@ -334,6 +358,11 @@ goalsPanel.addEventListener("click", async (e) => {
     renderGoals();
     return;
   }
+  if (act === "settings-toggle") {
+    goalsSettingsOpen = !goalsSettingsOpen;
+    renderGoals();
+    return;
+  }
   if (act === "remind-open") {
     el.closest(".remind-wrap").classList.toggle("open");
     return;
@@ -410,6 +439,11 @@ goalsPanel.addEventListener("mousedown", (e) => {
   goalsPanel.querySelectorAll(".remind-wrap.open").forEach((wrap) => {
     if (!wrap.contains(e.target)) wrap.classList.remove("open");
   });
+  // a click anywhere outside the settings card puts it away
+  if (goalsSettingsOpen && !e.target.closest(".settings-card, .settings-btn")) {
+    goalsSettingsOpen = false;
+    renderGoals();
+  }
 });
 
 window.addEventListener("resize", () => {
