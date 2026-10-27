@@ -4167,3 +4167,25 @@ body.local .settings-row .remind-wrap { display: block; }
 
 /* the "?" has no place on a phone: this comes after the rule that sets its display */
 @media (max-width: 700px) { .help-btn, .help-card { display: none !important; } }
+
+/* the stairs as in the picture: many small steps, a soft light beneath, flags on the landings */
+.track-area-bg, .track-area { display: none; }
+.road-wrap.theme-stairs .track-area-bg, .road-wrap.theme-stairs .track-area { display: inline; }
+.track-area-bg { fill: url(#stairsLight); opacity: 0.3; }
+.track-area { fill: url(#stairsLight); opacity: 0.9; }
+.road-wrap.theme-stairs .track-bg { stroke-width: 3; }
+.road-wrap.theme-stairs .track-glow { stroke-width: 8; }
+.road-wrap.theme-stairs .track-fill { stroke-width: 3; }
+
+.stair-flag { position: absolute; left: 122px; top: 2px; width: 22px; height: 36px; color: var(--g1); pointer-events: none; }
+.stair-flag.planted { color: var(--white); }
+.stair-flag.big { transform: scale(1.5); transform-origin: 3px 35px; }
+.stair-flag-svg { display: block; overflow: visible; }
+.flag-cloth { transform-box: fill-box; transform-origin: 0 50%; animation: flagWave 1.8s ease-in-out infinite; }
+@keyframes flagWave { 0%, 100% { transform: scaleX(1) skewY(0deg); } 50% { transform: scaleX(0.82) skewY(5deg); } }
+.node:not(.done):not(.finish) .stair-flag { display: none; }
+.stair-flag:not(.planted) .flag-cloth { fill: var(--g2); animation: none; }
+@media (prefers-reduced-motion: reduce) { .flag-cloth { animation: none; } }
+
+.track-area { opacity: 0.65; }
+.track-area-bg { opacity: 0.2; }

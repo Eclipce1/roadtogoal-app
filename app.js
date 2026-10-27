@@ -589,6 +589,8 @@ const NODE_HALF_W = 84;
 const CIRCLE_CY = 38;
 
 let trackBg = null;
+let trackAreaBg = null;
+let trackArea = null;
 let trackGlow = null;
 let trackFill = null;
 let fillLen = 0;
@@ -619,10 +621,9 @@ function setRoadTheme(theme) {
 }
 
 // stairs: room above the highest step for the man, room below the lowest for the labels
-const STAIRS_TOP = 96;
+const STAIRS_TOP = 118;
 const STAIRS_BOTTOM = 150;
 const STAIRS_RISE = 46;
-const TREAD_HALF = STEP_X / 2;
 
 function stairsLayout(count, height) {
   const room = Math.max(0, height - STAIRS_TOP - STAIRS_BOTTOM);
@@ -634,14 +635,37 @@ function stairsLayout(count, height) {
   return points;
 }
 
-// one tread per step, a riser between them; `upTo` stops in the middle of that step's tread
+// Each step of the goal is a landing; between two landings the stairs climb in several small
+// steps (think big, act small). `upTo` stops in the middle of that landing.
+const LANDING_HALF = 56;
+const LEAD = 44; // a little level ground before the first and after the last landing
+
+function smallStepsCount(points) {
+  const rise = points.length > 1 ? points[0].y - points[1].y : 0;
+  return Math.max(1, Math.min(6, Math.round(rise / 5)));
+}
+
 function stairsPath(points, upTo) {
   if (!points.length) return "";
   const last = upTo === undefined ? points.length - 1 : upTo;
-  let d = `M ${points[0].x - TREAD_HALF} ${points[0].y}`;
-  for (let i = 0; i < last; i++) d += ` H ${points[i].x + TREAD_HALF} V ${points[i + 1].y}`;
-  d += upTo === undefined ? ` H ${points[last].x + TREAD_HALF}` : ` H ${points[last].x}`;
+  const k = smallStepsCount(points);
+  const run = STEP_X - 2 * LANDING_HALF;
+  let d = `M ${points[0].x - LANDING_HALF - LEAD} ${points[0].y}`;
+  for (let i = 0; i < last; i++) {
+    const { x, y } = points[i];
+    d += ` H ${x + LANDING_HALF}`;
+    for (let j = 1; j <= k; j++) d += ` V ${y + ((points[i + 1].y - y) * j) / k} H ${x + LANDING_HALF + (run * j) / k}`;
+  }
+  d += upTo === undefined ? ` H ${points[last].x + LANDING_HALF + LEAD}` : ` H ${points[last].x}`;
   return d;
+}
+
+// the same outline closed down to the bottom of the picture: a soft light under the stairs
+function stairsArea(points, upTo, bottom) {
+  if (!points.length) return "";
+  const d = stairsPath(points, upTo);
+  const endX = upTo === undefined ? points[points.length - 1].x + LANDING_HALF + LEAD : points[upTo].x;
+  return `${d} V ${bottom} H ${points[0].x - LANDING_HALF - LEAD} Z`;
 }
 
 function layout(count, height) {
@@ -673,7 +697,12 @@ function pathFromPoints(points) {
 
 function ensureTrackPaths() {
   if (trackBg) return;
-  svg.innerHTML = '<path class="track-bg" d="" /><path class="track-glow" d="" /><path class="track-fill" d="" />';
+  svg.innerHTML =
+    '<defs><linearGradient id="stairsLight" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--white)" stop-opacity=".16"/><stop offset="1" style="stop-color:var(--white)" stop-opacity="0"/></linearGradient></defs>' +
+    '<path class="track-area-bg" d="" /><path class="track-area" d="" />' +
+    '<path class="track-bg" d="" /><path class="track-glow" d="" /><path class="track-fill" d="" />';
+  trackAreaBg = svg.querySelector(".track-area-bg");
+  trackArea = svg.querySelector(".track-area");
   trackBg = svg.querySelector(".track-bg");
   trackGlow = svg.querySelector(".track-glow");
   trackFill = svg.querySelector(".track-fill");
@@ -688,6 +717,10 @@ function drawTrack(points, reachIndex, animate) {
 
   const stairs = roadTheme() === "stairs";
   trackBg.setAttribute("d", stairs ? stairsPath(points) : pathFromPoints(points));
+  if (!stairs) {
+    trackAreaBg.setAttribute("d", "");
+    trackArea.setAttribute("d", "");
+  }
   if (!points.length) {
     trackFill.setAttribute("d", "");
     trackGlow.setAttribute("d", "");
@@ -696,6 +729,11 @@ function drawTrack(points, reachIndex, animate) {
   }
 
   const doneD = stairs ? stairsPath(points, reachIndex) : pathFromPoints(points.slice(0, reachIndex + 1));
+  if (stairs) {
+    const bottom = roadWrap.clientHeight;
+    trackAreaBg.setAttribute("d", stairsArea(points, undefined, bottom));
+    trackArea.setAttribute("d", stairsArea(points, reachIndex, bottom));
+  }
   trackFill.setAttribute("d", doneD);
   trackGlow.setAttribute("d", doneD);
   const len = trackFill.getTotalLength();
@@ -750,6 +788,7 @@ function render(data, opts = {}) {
     el.innerHTML = `
       ${state === "current" ? '<div class="node-now">сейчас</div>' : ""}
       <button class="node-del" title="Удалить шаг">✕</button>
+      ${roadTheme() === "stairs" && (g.done || isFinish) ? `<div class="stair-flag${isFinish ? " big" : ""}${g.done ? " planted" : ""}"><svg class="stair-flag-svg" viewBox="0 0 22 36" width="22" height="36"><path d="M3 35V2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/><path class="flag-cloth" d="M3 3 L20 8.5 L3 15Z" fill="#4ade80"/></svg></div>` : ""}
       <div class="node-circle" title="Открыть шаг">
         <span class="node-icon">${escapeHtml(g.reward)}</span>
         ${g.done ? '<div class="node-badge">✓</div>' : ""}
@@ -789,16 +828,24 @@ function render(data, opts = {}) {
 const CLIMBER_SVG = `
   <svg viewBox="0 0 44 70" width="44" height="70" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
     <g class="cl-leg cl-leg-b"><path d="M20 42 L31 50 L31 66" stroke-width="7.5"/></g>
-    <g class="cl-arm cl-arm-b"><path d="M24 23 L33 30 L39 29" stroke-width="5.5"/></g>
+    <g class="cl-arm cl-arm-b">
+      <path d="M24 23 L32 27 L37 20" stroke-width="5.5"/>
+      <path d="M37 24 V-4" stroke-width="2.2"/>
+      <path class="flag-cloth" d="M37.5 -3 L54 2.5 L37.5 9Z" fill="#4ade80" stroke="none"/>
+    </g>
     <path d="M24 19 L20 42" stroke-width="9.5"/>
     <circle cx="27" cy="8" r="7.5" fill="currentColor" stroke="none"/>
     <g class="cl-leg cl-leg-a"><path d="M20 42 L14 67" stroke-width="7.5"/></g>
     <g class="cl-arm cl-arm-a"><path d="M24 23 L15 31 L14 41" stroke-width="5.5"/></g>
-    <path class="cl-cheer" d="M24 24 L10 10 M24 24 L39 12" stroke-width="5.5"/>
+    <g class="cl-cheer">
+      <path d="M24 24 L10 10 M24 24 L39 12" stroke-width="5.5"/>
+      <path d="M40 14 V-14" stroke-width="2.2"/>
+      <path class="flag-cloth" d="M40.5 -13 L58 -7.5 L40.5 -1Z" fill="#4ade80" stroke="none"/>
+    </g>
   </svg>`;
 
 const climber = { el: null, idx: -1, goal: null, x: 0, y: 0 };
-const CLIMBER_DX = -70; // he stands on the tread, to the left of the step's circle
+const CLIMBER_DX = -66; // he stands on the tread, to the left of the step's circle
 
 function placeClimber(points, current, data) {
   if (roadTheme() !== "stairs" || !points.length) {
