@@ -652,12 +652,12 @@ const LANDING_HALF = 46;
 const LEAD = 44; // a little level ground before the first and after the last landing
 
 // The flight of small stairs that leads up to a step has as many stairs as the step has actions
-// ("how to do it" in its card): think big, act small. A step with no actions gets a few anyway.
-const DEFAULT_STAIRS = 3;
+// ("how to do it" in its card): think big, act small. A step with no actions has a single stair.
+const DEFAULT_STAIRS = 1;
 const MAX_STAIRS = 8;
 function stairsInto(step) {
   const n = ((step && step.actions) || []).filter((a) => a.text).length;
-  return n ? Math.min(MAX_STAIRS, Math.max(2, n)) : DEFAULT_STAIRS;
+  return n ? Math.min(MAX_STAIRS, n) : DEFAULT_STAIRS;
 }
 
 function stairsPath(points, upTo) {
