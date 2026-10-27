@@ -1248,11 +1248,78 @@ function setupFullscreenToggle(startFull) {
   document.body.appendChild(btn);
 }
 
+// The "?" in the corner: what can be done on the screen that is open, said once and out of the way.
+const HELP_TEXTS = {
+  road: ["Внизу строка «Новый шаг к цели»: впиши шаг и нажми «Добавить».", "Нажми на шаг на дорожке, чтобы открыть его карточку.", "Слева выезжает меню: подведи курсор к левому краю или нажми «Меню»."],
+  graph: ["Клик по цели открывает её дорожку.", "Тяни точку или фон, чтобы подвинуть картинку; колесо мыши меняет масштаб.", "«+ Новая цель» создаёт цель, «Граф / Список» меняет вид."],
+  list: ["Стрелка слева раскрывает шаги цели, клик по названию открывает её.", "Зажми значок ⠿ на карточке и перетащи цель, чтобы поменять порядок.", "«+ Новая цель» создаёт цель, «Граф / Список» меняет вид."],
+  plan: ["Выбери день на ленте недели или в календаре и впиши дела.", "Дело можно перетащить на другой день: на ленту или в календарь."],
+  study: ["Плитка — это предмет: зайди в неё, чтобы увидеть задания, сроки и файлы.", "Чем ближе срок, тем заметнее подсветка задания."],
+  day: ["Здесь только самое важное на сегодня: кружок отмечает дело сделанным, название открывает его.", "«Отметить день» засчитывает сегодняшний день."],
+  settings: ["Слева разделы, справа их параметры.", "Крестик или Esc возвращает туда, где ты был."],
+};
+const HELP_NAMES = { road: "Дорожка", graph: "Цели", list: "Цели", plan: "Планирование", study: "Учёба", day: "Сегодня", settings: "Настройки" };
+
+function helpKey() {
+  if (!goalsEl.classList.contains("open")) return "road";
+  return goalsSection === "goals" ? (goalsMode === "graph" ? "graph" : "list") : goalsSection;
+}
+
+// Esc puts the hint away first. This listener is registered at load, before the ones that
+// close "Мои цели" or leave full screen, so the same keystroke does not also do that.
+let helpClose = null;
+document.addEventListener(
+  "keydown",
+  (e) => {
+    const card = document.querySelector(".help-card");
+    if (e.key === "Escape" && card && !card.hidden && helpClose) {
+      helpClose();
+      e.stopImmediatePropagation();
+    }
+  },
+  true
+);
+
+function setupHelpButton() {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "help-btn";
+  btn.title = "Подсказка";
+  btn.setAttribute("aria-label", "Подсказка");
+  btn.textContent = "?";
+  const card = document.createElement("div");
+  card.className = "help-card";
+  card.hidden = true;
+  const close = () => {
+    card.hidden = true;
+    btn.classList.remove("on");
+  };
+  const open = () => {
+    const key = helpKey();
+    const keys = [["Esc", "дорожка ⇄ список целей"]];
+    if (IN_DESKTOP && !PREVIEW) keys.push(["F11", "на весь экран"]);
+    card.innerHTML = `
+      <div class="help-title">${HELP_NAMES[key]}: что тут можно</div>
+      <ul>${HELP_TEXTS[key].map((t) => `<li>${t}</li>`).join("")}</ul>
+      <div class="help-keys">${keys.map(([k, t]) => `<span><kbd>${k}</kbd> ${t}</span>`).join("")}</div>`;
+    card.classList.toggle("high", !!document.querySelector(".fs-toggle:not(.on)"));
+    card.hidden = false;
+    btn.classList.add("on");
+  };
+  btn.addEventListener("click", () => (card.hidden ? open() : close()));
+  document.addEventListener("mousedown", (e) => {
+    if (!card.hidden && !card.contains(e.target) && e.target !== btn) close();
+  });
+  helpClose = close;
+  document.body.append(card, btn);
+}
+
 // start only after every script on the page (quotes, icons, goal plan) has loaded
 window.addEventListener("DOMContentLoaded", async () => {
   const data = await api.get_data();
   render(data, { scrollToCurrent: true });
   if (typeof Sync !== "undefined") Sync.start();
+  setupHelpButton();
   // opened over the whole screen by Windows: offer the way back to a normal window
   if (IN_DESKTOP && !PREVIEW) {
     try {

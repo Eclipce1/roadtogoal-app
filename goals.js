@@ -259,7 +259,6 @@ function goalsMainHtml() {
              <span><i class="lg-goal"></i>цель</span><span><i class="lg-done"></i>пройден</span>
              <span><i class="lg-cur"></i>сейчас</span><span><i class="lg-lock"></i>впереди</span>
            </div>
-           <div class="graph-hint">Клик — открыть · тяни точку или фон · колесо — масштаб</div>
          </div>`
       : `<div class="goals-list">
            <div class="tree">${goals.map((g, i) => goalRow(g, i === 0, i === goals.length - 1)).join("")}</div>
