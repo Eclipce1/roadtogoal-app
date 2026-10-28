@@ -1444,8 +1444,11 @@ addForm.addEventListener("submit", async (e) => {
   iconChosenByHand = false;
   setIcon(DEFAULT_ICON);
   togglePicker(false);
-  // a step put somewhere other than the usual spot flashes once so you see where it landed
-  render(data, added && where !== "end" ? { flashId: added.id, flash: where } : {});
+    // the new step is brought into view whichever place it went to: on a long road it would
+  // otherwise land out of sight and look as if nothing had happened
+  // and the bar folding back (the keyboard going away) must not pull the road back to the current step
+  if (added) userScrolled = true;
+  render(data, added ? { flashId: added.id, flash: where === "end" ? "start" : where } : {});
 });
 
 buildPicker();

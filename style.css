@@ -5212,3 +5212,10 @@ body.local .settings-row .remind-wrap { display: block; }
   .plan-toggle .short-label { display: inline; }
   .quote-wrap { display: none; }
 }
+
+/* the settings window on a phone starts below the clock, and its tabs leave room for the cross */
+@media (max-width: 700px) {
+  .set-win { margin: 56px auto 12px; height: calc(100% - 68px); }
+  .set-side { gap: 2px; padding-right: 50px; }
+  .set-tab { padding: 9px 10px; }
+}
