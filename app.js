@@ -338,6 +338,8 @@ function previewApi() {
         sub.updatedAt = Date.now();
         dropUnusedFiles(st);
       }),
+    // how this device looks and behaves (the road picture, the camera): kept with the other settings
+    set_ui_pref: async (key, value) => quiet((st) => (st.settings = { ...settingsOf(st), [key]: value })),
     set_reminder: async (enabled, time) =>
       quiet((st) => (st.settings = { ...settingsOf(st), reminder: { enabled: !!enabled, time } })),
 
@@ -565,7 +567,7 @@ const apiReady = new Promise((resolve) => {
 // calls that only look at things, or touch this device's own settings, are no news to the other device
 const NOT_A_CHANGE = new Set([
   "get_data", "select_goal", "export_store", "import_store", "get_sync_config", "set_sync_config",
-  "set_reminder", "set_plan_reminder", "set_autostart", "put_file", "get_file", "open_file",
+  "set_reminder", "set_plan_reminder", "set_autostart", "set_ui_pref", "put_file", "get_file", "open_file",
 ]);
 
 const api = new Proxy({}, {
@@ -606,35 +608,47 @@ const NODE_BLOCK_HEIGHT = 268;
 
 // The camera: the road scrolls by itself after him as he walks. Can be switched off in the settings.
 const CAMERA_KEY = "roadtogoal_camera";
-function cameraOn() {
+// How the app looks is kept in the app's own settings (the desktop app's page has a different
+// address every launch, so the browser's storage there is forgotten each time); the browser's
+// storage is only the fallback, and what a phone started with before this was kept.
+function uiPref(key, storageKey) {
+  const fromData = lastData && lastData.settings ? lastData.settings[key] : undefined;
+  if (fromData !== undefined) return fromData;
   try {
-    return localStorage.getItem(CAMERA_KEY) !== "off";
+    return localStorage.getItem(storageKey);
   } catch (e) {
-    return true;
+    return null;
   }
 }
 
-function setCamera(on) {
+function saveUiPref(key, storageKey, value) {
   try {
-    localStorage.setItem(CAMERA_KEY, on ? "on" : "off");
+    localStorage.setItem(storageKey, String(value));
   } catch (e) {}
+  if (lastData) lastData.settings = { ...(lastData.settings || {}), [key]: value };
+  api.set_ui_pref(key, value).then((d) => {
+    if (d && d.settings) lastData.settings = d.settings;
+  }).catch(() => {});
+}
+
+function cameraOn() {
+  const v = uiPref("camera", CAMERA_KEY);
+  return v !== false && v !== "off" && v !== "false";
+}
+
+function setCamera(on) {
+  saveUiPref("camera", CAMERA_KEY, !!on);
 }
 
 // The road can be drawn two ways, chosen in the settings and kept on this device:
 // "road" is the winding line, "stairs" a staircase with a little man climbing it.
 const ROAD_THEME_KEY = "roadtogoal_road_theme";
 function roadTheme() {
-  try {
-    return localStorage.getItem(ROAD_THEME_KEY) === "stairs" ? "stairs" : "road";
-  } catch (e) {
-    return "road";
-  }
+  return uiPref("roadTheme", ROAD_THEME_KEY) === "stairs" ? "stairs" : "road";
 }
 
 function setRoadTheme(theme) {
-  try {
-    localStorage.setItem(ROAD_THEME_KEY, theme);
-  } catch (e) {}
+  saveUiPref("roadTheme", ROAD_THEME_KEY, theme);
   climber.state = null; // a new picture: start the man in place, do not walk him across
   if (lastData) render(lastData, { scrollToCurrent: true });
 }
