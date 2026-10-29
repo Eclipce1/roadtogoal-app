@@ -96,6 +96,26 @@ const Sync = (() => {
     return stable(a) >= stable(b) ? a : b;
   }
 
+  // A goal nobody has worked on: the starting one a new device makes for itself. It must never
+  // win over a real goal with the same id just because it was made later.
+  function isBlankGoal(g) {
+    const woop = g.woop || {};
+    const title = (g.mainGoal || "").trim();
+    return (
+      !(g.subGoals || []).length &&
+      !(g.checkins || []).length &&
+      !Object.values(woop).some((v) => String(v || "").trim()) &&
+      (title === "" || title === "Моя цель" || title === "Новая цель")
+    );
+  }
+
+  function pickGoal(a, b) {
+    const blankA = isBlankGoal(a);
+    const blankB = isBlankGoal(b);
+    if (blankA !== blankB) return blankA ? b : a;
+    return pickNewer(a, b, (x) => x.updatedAt);
+  }
+
   function mergeStores(local, remote) {
     const out = clone(local);
     delete out.fresh;
@@ -106,7 +126,7 @@ const Sync = (() => {
     const byId = new Map(local.goals.map((g) => [g.id, g]));
     for (const g of remote.goals) {
       const mine = byId.get(g.id);
-      byId.set(g.id, mine ? pickNewer(mine, g, (x) => x.updatedAt) : g);
+      byId.set(g.id, mine ? pickGoal(mine, g) : g);
     }
     for (const [id, ts] of Object.entries(tomb)) {
       const g = byId.get(Number(id));
@@ -354,7 +374,7 @@ const Sync = (() => {
 
     if (!remote) {
       // nothing in the cloud yet: the first device to connect puts its data there
-      if (isFresh) throw new SyncError("В облаке пока пусто, а на телефоне только пример. Сначала подключи компьютер.");
+      if (isFresh) throw new SyncError("В облаке пока пусто, а здесь только пример. Сначала подключи устройство со своими целями.");
       const sha = await push(local, null);
       cfg = { ...cfg, baseSha: sha };
       lastFp = fingerprint(local);
